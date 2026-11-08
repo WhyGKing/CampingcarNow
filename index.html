@@ -272,15 +272,16 @@
 </div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyAf-9eF-Qf-aIffLGGZbQ76Hs_uzlSBcT0",
-        authDomain: "campingcarnow-4b9a9.firebaseapp.com",
-        projectId: "campingcarnow-4b9a9",
-        storageBucket: "campingcarnow-4b9a9.firebasestorage.app",
-        messagingSenderId: "523870851303",
-        appId: "1:523870851303:web:f43a82e942f421b79a1242",
-        measurementId: "G-LMHVBDZRMP"
-    };
+   const firebaseConfig = {
+    apiKey: "AIzaSyAf-9eF-Qf-aIffLGGZbQ76Hs_uzlSBcT0",
+    authDomain: "campingcarnow-4b9a9.firebaseapp.com",
+    databaseURL: "https://campingcarnow-4b9a9-default-rtdb.firebaseio.com",
+    projectId: "campingcarnow-4b9a9",
+    storageBucket: "campingcarnow-4b9a9.firebasestorage.app",
+    messagingSenderId: "523870851303",
+    appId: "1:523870851303:web:f43a82e942f421b79a1242",
+    measurementId: "G-LMHVBDZRMP"
+};
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
