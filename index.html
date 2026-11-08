@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>캠핑카 공장 통합 생산 현황판 (클라우드 연동)</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 10px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+        .status-badge { font-size: 11px; padding: 4px 8px; background: #28a745; color: white; border-radius: 4px; font-weight: bold; }
+        
+        .section { margin-bottom: 20px; padding: 12px; background: #f9f9f9; border-radius: 6px; border: 1px solid #ddd; }
+        .section h3 { font-size: 15px; margin-top: 0; color: #007bff; }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 3px; color: #555; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        
+        .furniture-input-box { background: #fff; border: 1px solid #ced4da; border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+        .furniture-input-box label { color: #2b8a3e; font-size: 13px; margin-bottom: 4px; }
+
+        .process-input-row { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; margin-bottom: 6px; display: flex; flex-direction: column; gap: 5px; }
+        .process-input-row label { font-size: 12px; color: #333; font-weight: bold; margin: 0; }
+        .process-inputs-grid { display: flex; gap: 5px; }
+        .process-inputs-grid input { padding: 6px; font-size: 12px; }
+
+        button.action-btn { width: 100%; background: #007bff; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 15px; margin-top: 10px; }
+        button.action-btn:hover { background: #0056b3; }
+        
+        .car-card { background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
+        .car-header { background: #e9ecef; padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; }
+        .car-title { font-size: 15px; color: #222; }
+        .toggle-icon { font-size: 14px; color: #555; }
+        
+        .car-body { padding: 12px; display: none; border-top: 1px solid #ddd; font-size: 13px; color: #444; line-height: 1.6; }
+        .car-body.active { display: block; }
+        
+        .process-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+        .process-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; color: #333; margin-bottom: 5px; font-size: 13px; }
+        .process-details { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+        .process-details-row { display: flex; gap: 5px; align-items: center; }
+        .process-details input { padding: 4px; font-size: 11px; }
+        
+        .status-btn { padding: 5px 8px; font-size: 11px; cursor: pointer; border-radius: 4px; border: none; font-weight: bold; }
+        .btn-ready { background: #ffc107; color: black; }
+        .btn-ing { background: #17a2b8; color: white; }
+        .btn-done { background: #28a745; color: white; }
+        
+        .photo-btn { background: #6f42c1; color: white; border: none; padding: 3px 6px; font-size: 10px; border-radius: 3px; cursor: pointer; font-weight: bold; margin-left: 5px; }
+        .photo-btn.has-photo { background: #20c997; }
+
+        .card-footer { display: flex; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #eee; }
+        .sub-btn { padding: 8px 10px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; flex: 1; }
+        .edit-btn { background: #6c757d; color: white; }
+        .report-btn { background: #dc3545; color: white; }
+        .delete-btn { background: #343a40; color: white; }
+        
+        .issue-section-title { font-weight: bold; color: #c92a2a; font-size: 13px; margin: 12px 0 6px 0; border-top: 1px dashed #ff8787; padding-top: 8px; }
+        .issue-item { background: #fff5f5; border: 1px solid #ffa8a8; padding: 8px; border-radius: 4px; margin-bottom: 6px; font-size: 12px; color: #c92a2a; cursor: pointer; transition: background 0.2s; }
+        .issue-item:hover { background: #ffe3e3; }
+
+        .file-tag-box { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .file-tag { background: #e9ecef; border: 1px solid #ced4da; border-radius: 4px; padding: 4px 8px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+        .file-tag span { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #333; }
+        .file-tag button { background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; padding: 2px 5px; font-weight: bold; }
+
+        .download-file-link { color: #007bff; text-decoration: none; font-weight: bold; background: #e7f5ff; padding: 4px 10px; border-radius: 4px; border: 1px solid #74c0fc; display: inline-block; margin: 2px; font-size: 12px; }
+        .download-file-link:hover { background: #d0ebff; text-decoration: underline; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 10px; box-sizing: border-box; touch-action: none; }
+        .modal-content { background: white; width: 100%; max-width: 480px; padding: 15px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); position: relative; max-height: 85vh; overflow-y: auto; text-align: center; box-sizing: border-box; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+        .modal-header { font-weight: bold; font-size: 16px; color: #007bff; margin-bottom: 10px; border-bottom: 2px solid #b2d7ff; padding-bottom: 8px; text-align: left; position: sticky; top: 0; background: white; z-index: 10; }
+        .modal-header.issue-type { color: #c92a2a; border-bottom: 2px solid #ff8787; }
+        .modal-header.edit-type { color: #6c757d; border-bottom: 2px solid #adb5bd; }
+        .modal-body { font-size: 14px; color: #333; margin-bottom: 15px; line-height: 1.5; word-break: break-all; text-align: left; }
+        
+        .photo-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
+        .photo-card-item { background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; padding: 6px; width: 110px; text-align: center; }
+        .photo-thumb { width: 100px; height: 100px; object-fit: cover; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; display: block; margin: 0 auto; }
+        .photo-delete-btn { width: 100%; background: #dc3545; color: white; border: none; padding: 5px; font-size: 11px; border-radius: 3px; cursor: pointer; font-weight: bold; margin-top: 6px; }
+        .photo-delete-btn:hover { background: #bd2130; }
+
+        .zoom-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 2000; padding: 10px; box-sizing: border-box; }
+        .zoom-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
+        .zoom-close { position: absolute; top: 15px; right: 20px; background: white; color: black; border: none; font-size: 18px; font-weight: bold; padding: 8px 12px; border-radius: 50%; cursor: pointer; }
+
+        .modal-close-btn { width: 100%; background: #6c757d; color: white; border: none; padding: 10px; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer; margin-top: 15px; }
+    </style>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h2>
+        <span>🚐 캠핑카 통합 생산 현황판</span>
+        <span class="status-badge" id="syncStatus">☁️ 실시간 연동됨</span>
+    </h2>
+
+    <!-- 1. 신규 작업 지시 등록 영역 -->
+    <div class="section">
+        <h3>1. 신규 작업 지시 등록</h3>
+        <div class="form-group">
+            <label>차종:</label>
+            <input type="text" id="carModel" list="carModelList" placeholder="예: 스타리아">
+            <datalist id="carModelList"></datalist>
+        </div>
+        <div class="form-group">
+            <label>차량번호:</label>
+            <input type="text" id="carNumber" list="carNumberList" placeholder="예: 1234호">
+            <datalist id="carNumberList"></datalist>
+        </div>
+        
+        <label style="margin-top: 10px; font-weight:bold; color:#007bff;">🗂️ 가구별 세부 지시사항</label>
+        <div class="furniture-input-box">
+            <label>🪵 목재종류:</label>
+            <input type="text" id="memoWood" placeholder="예: 자작나무 합판 15mm, 포퓰러 등">
+        </div>
+        <div class="furniture-input-box">
+            <label>🛏️ 침상 지시사항:</label>
+            <input type="text" id="memoBed" placeholder="예: 침상 하단 서랍 추가 등">
+        </div>
+        <div class="furniture-input-box">
+            <label>📦 사이드수납장 지시사항:</label>
+            <input type="text" id="memoSide" placeholder="예: 우측 깊이 5cm 축소 등">
+        </div>
+        <div class="furniture-input-box">
+            <label>🚰 싱크장 지시사항:</label>
+            <input type="text" id="memoSink" placeholder="예: 수전 위치 변경 등">
+        </div>
+        <div class="furniture-input-box">
+            <label>🏷️ 기타 가구 지시사항:</label>
+            <input type="text" id="memoEtc" placeholder="예: 천장 테이블 별도 제작 등">
+        </div>
+
+        <label style="margin-top: 15px; font-weight:bold; color:#007bff;">📋 7단계 공정별 담당자, 기한 및 세부사항 지정</label>
+        <div id="registerProcessContainer"></div>
+
+        <div class="form-group" style="margin-top: 12px;">
+            <label>최종 출고예정일:</label>
+            <input type="date" id="shipDueDate">
+        </div>
+
+        <div class="form-group">
+            <label>📁 CNC 가공 파일 첨부 (직원 다운로드용):</label>
+            <button type="button" onclick="document.getElementById('regFileHiddenInput').click()" style="width:100%; background:#17a2b8; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">
+                📂 내 파일 앱에서 CNC 파일 선택 (<span id="regFileCount">0개 선택됨</span>)
+            </button>
+            <input type="file" id="regFileHiddenInput" multiple style="display:none;" onchange="handleFileChange(this, 'reg')">
+            <div id="regFileTagBox" class="file-tag-box"></div>
+        </div>
+
+        <button class="action-btn" onclick="addWorkOrder()">작업 지시 등록하기</button>
+    </div>
+
+    <!-- 2. 차량별 통합 현황판 -->
+    <div class="section">
+        <h3>2. 차량별 공정 현황판</h3>
+        <div id="carCardList"></div>
+    </div>
+</div>
+
+<!-- 차량 전체 정보 수정 팝업 모달창 -->
+<div id="editCarModal" class="modal-overlay" onclick="preventBgClose(event)">
+    <div class="modal-content">
+        <div class="modal-header edit-type">✏️ 차량 전체 정보 수정</div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>차종:</label>
+                <input type="text" id="editCarModelInput">
+            </div>
+            <div class="form-group">
+                <label>차량번호:</label>
+                <input type="text" id="editCarNumberInput">
+            </div>
+
+            <label style="margin-top: 12px; font-weight:bold; color:#2b8a3e;">🗂️ 가구별 세부 지시사항 수정</label>
+            <div class="furniture-input-box">
+                <label>🪵 목재종류:</label>
+                <input type="text" id="editMemoWood">
+            </div>
+            <div class="furniture-input-box">
+                <label>🛏️ 침상:</label>
+                <input type="text" id="editMemoBed">
+            </div>
+            <div class="furniture-input-box">
+                <label>📦 사이드수납장:</label>
+                <input type="text" id="editMemoSide">
+            </div>
+            <div class="furniture-input-box">
+                <label>🚰 싱크장:</label>
+                <input type="text" id="editMemoSink">
+            </div>
+            <div class="furniture-input-box">
+                <label>🏷️ 기타 가구:</label>
+                <input type="text" id="editMemoEtc">
+            </div>
+
+            <label style="margin-top: 15px; font-weight:bold; color:#007bff;">📋 7단계 공정별 담당자, 기한 및 세부사항 수정</label>
+            <div id="editProcessContainer"></div>
+
+            <div class="form-group" style="margin-top: 12px;">
+                <label>최종 출고예정일:</label>
+                <input type="date" id="editCarShipDateInput">
+            </div>
+
+            <div class="form-group">
+                <label>📁 CNC 가공 파일 수정/추가:</label>
+                <button type="button" onclick="document.getElementById('editFileHiddenInput').click()" style="width:100%; background:#17a2b8; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">
+                    📂 내 파일 앱에서 파일 추가 (<span id="editFileCount">0개 선택됨</span>)
+                </button>
+                <input type="file" id="editFileHiddenInput" multiple style="display:none;" onchange="handleFileChange(this, 'edit')">
+                <div id="editFileTagBox" class="file-tag-box"></div>
+            </div>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:15px; position:sticky; bottom:0; background:white; padding-top:5px;">
+            <button onclick="saveEditedCarInfo()" style="flex:1; background:#28a745; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:14px; cursor:pointer;">저장하기</button>
+            <button onclick="closeEditCarModal()" style="flex:1; background:#6c757d; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:14px; cursor:pointer;">취소</button>
+        </div>
+    </div>
+</div>
+
+<!-- 공정 사진 관리 팝업 모달창 -->
+<div id="processPhotoModal" class="modal-overlay" onclick="preventBgClose(event)">
+    <div class="modal-content">
+        <div class="modal-header">📷 공정 완료 사진 관리</div>
+        <div class="modal-body" id="processModalBodyText"></div>
+        <div id="processModalPhotoContainer"></div>
+        <button class="modal-close-btn" onclick="closeProcessPhotoModal()">닫기</button>
+    </div>
+</div>
+
+<!-- 문제 보고 등록 팝업 모달창 -->
+<div id="reportInputModal" class="modal-overlay" onclick="preventBgClose(event)">
+    <div class="modal-content">
+        <div class="modal-header issue-type">🚨 문제 보고 등록</div>
+        <div class="modal-body">
+            <label style="margin-bottom:5px; color:#333;">📝 문제 내용 입력:</label>
+            <textarea id="reportTextContent" rows="4" placeholder="발생한 문제 내용을 자세히 입력하세요..." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; font-size:14px; resize:vertical;"></textarea>
+            
+            <label style="margin-top:12px; margin-bottom:5px; color:#333;">📷 현장 사진 첨부 (선택):</label>
+            <button onclick="triggerReportPhotoSelect()" style="width:100%; background:#6f42c1; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">
+                📸 사진 선택하기 (<span id="reportPhotoCount">0장 선택됨</span>)
+            </button>
+            <input type="file" id="reportPhotoHiddenInput" accept="image/*" multiple style="display:none;" onchange="handleReportPhotoSelect(this)">
+            
+            <div id="reportPhotoPreviewGrid" class="photo-grid" style="margin-top:10px;"></div>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:10px;">
+            <button onclick="submitReportIssue()" style="flex:1; background:#dc3545; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:14px; cursor:pointer;">등록하기</button>
+            <button onclick="closeReportInputModal()" style="flex:1; background:#6c757d; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:14px; cursor:pointer;">취소</button>
+        </div>
+    </div>
+</div>
+
+<!-- 문제 보고 상세 확인 모달창 -->
+<div id="issueModal" class="modal-overlay" onclick="preventBgClose(event)">
+    <div class="modal-content">
+        <div class="modal-header issue-type">🚨 문제 보고 상세 내용</div>
+        <div class="modal-body" id="modalBodyText"></div>
+        <div id="modalBodyPhotoContainer"></div>
+        <button class="modal-close-btn" onclick="closeIssueModal()">닫기</button>
+    </div>
+</div>
+
+<!-- 사진 확대 레이어 -->
+<div id="zoomOverlay" class="zoom-overlay" onclick="closeZoom()">
+    <button class="zoom-close" onclick="closeZoom()">✕</button>
+    <img id="zoomImg" class="zoom-img">
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyAf-9eF-Qf-aIffLGGZbQ76Hs_uzlSBcT0",
+        authDomain: "campingcarnow-4b9a9.firebaseapp.com",
+        projectId: "campingcarnow-4b9a9",
+        storageBucket: "campingcarnow-4b9a9.firebasestorage.app",
+        messagingSenderId: "523870851303",
+        appId: "1:523870851303:web:f43a82e942f421b79a1242",
+        measurementId: "G-LMHVBDZRMP"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const carsRef = db.ref('factory_cars');
+
+    const PROCESS_LIST = [
+        "1. 설계 및 설계변경검토",
+        "2. 차량전처리",
+        "3. CNC타공",
+        "4. 부속자재 샌딩",
+        "5. 마감 도색",
+        "6. 가구조립",
+        "7. 가구시공"
+    ];
+
+    let recentValues = {
+        carModel: JSON.parse(localStorage.getItem('recent_carModel') || '[]'),
+        carNumber: JSON.parse(localStorage.getItem('recent_carNumber') || '[]')
+    };
+
+    let savedCars = [];
+    let openCards = new Set();
+    let activeReportCarIndex = null;
+    let activeEditCarIndex = null;
+    let tempReportPhotos = [];
+    let regFiles = [];
+    let editFiles = [];
+
+    window.onload = function() {
+        updateDatalists();
+        initRegisterProcessInputs();
+        carsRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            savedCars = data ? Object.values(data) : [];
+            renderCards();
+        });
+    };
+
+    function preventBgClose(e) {
+        e.stopPropagation();
+    }
+
+    function initRegisterProcessInputs() {
+        const container = document.getElementById('registerProcessContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        PROCESS_LIST.forEach((procName, index) => {
+            container.innerHTML += `
+                <div class="process-input-row">
+                    <label>${procName}</label>
+                    <div class="process-inputs-grid">
+                        <input type="text" id="regWorker_${index}" placeholder="담당자 이름" style="flex:1;">
+                        <input type="date" id="regDate_${index}" style="flex:1.2;">
+                    </div>
+                    <input type="text" id="regDesc_${index}" placeholder="해당 공정 세부사항 (예: 주의사항 등)" style="width:100%; padding:6px; font-size:12px; margin-top:3px;">
+                </div>
+            `;
+        });
+        regFiles = [];
+        renderFileTags('reg');
+    }
+
+    function saveAndPush(category, value) {
+        if (!value) return;
+        let list = recentValues[category] || [];
+        list = list.filter(item => item !== value);
+        list.unshift(value);
+        if (list.length > 5) list.pop();
+        recentValues[category] = list;
+        localStorage.setItem('recent_' + category, JSON.stringify(list));
+    }
+
+    function updateDatalists() {
+        for (let cat in recentValues) {
+            let datalist = document.getElementById(cat + 'List');
+            if (datalist) {
+                datalist.innerHTML = '';
+                recentValues[cat].forEach(val => {
+                    let option = document.createElement('option');
+                    option.value = val;
+                    datalist.appendChild(option);
+                });
+            }
+        }
+    }
+
+    function handleFileChange(input, type) {
+        let files = input.files;
+        if (!files || files.length === 0) return;
+        let targetArray = (type === 'reg') ? regFiles : editFiles;
+        
+        Array.from(files).forEach(file => {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                targetArray.push({
+                    name: file.name,
+                    data: e.target.result
+                });
+                renderFileTags(type);
+            };
+            reader.readAsDataURL(file);
+        });
+        input.value = '';
+    }
+
+    function removeFileItem(type, index) {
+        let targetArray = (type === 'reg') ? regFiles : editFiles;
+        targetArray.splice(index, 1);
+        renderFileTags(type);
+    }
+
+    function renderFileTags(type) {
+        let countEl = document.getElementById(type + 'FileCount');
+        let tagBox = document.getElementById(type + 'FileTagBox');
+        let targetArray = (type === 'reg') ? regFiles : editFiles;
+
+        if (countEl) countEl.innerText = `${targetArray.length}개 선택됨`;
+        if (tagBox) {
+            let html = '';
+            targetArray.forEach((fileObj, idx) => {
+                html += `
+                    <div class="file-tag">
+                        <span>📁 ${fileObj.name}</span>
+                        <button type="button" onclick="removeFileItem('${type}', ${idx})">✕</button>
+                    </div>
+                `;
+            });
+            tagBox.innerHTML = html;
+        }
+    }
+
+    function saveOrdersToCloud() {
+        carsRef.set(savedCars);
+    }
+
+    function renderCards() {
+        const container = document.getElementById('carCardList');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (savedCars.length === 0) {
+            container.innerHTML = `<div style="text-align:center; color:#777; padding:20px; font-size:13px;">등록된 차량 작업 지시가 없습니다.</div>`;
+            return;
+        }
+
+        savedCars.forEach((car, carIndex) => {
+            const card = document.createElement('div');
+            card.className = 'car-card';
+            let isOpen = openCards.has(carIndex);
+
+            let memosHtml = '';
+            if (car.memos) {
+                if (car.memos.wood) memosHtml += `<div>• <b>목재종류:</b> <span style="color:#2b8a3e; font-weight:bold;">${car.memos.wood}</span></div>`;
+                if (car.memos.bed) memosHtml += `<div>• <b>침상:</b> ${car.memos.bed}</div>`;
+                if (car.memos.side) memosHtml += `<div>• <b>사이드수납장:</b> ${car.memos.side}</div>`;
+                if (car.memos.sink) memosHtml += `<div>• <b>싱크장:</b> ${car.memos.sink}</div>`;
+                if (car.memos.etc) memosHtml += `<div>• <b>기타:</b> ${car.memos.etc}</div>`;
+            }
+            if (!memosHtml) memosHtml = '<div>특이사항 없음</div>';
+
+            let fileHtml = '파일 없음';
+            if (car.files && car.files.length > 0) {
+                fileHtml = '';
+                car.files.forEach((fObj) => {
+                    fileHtml += `<a class="download-file-link" href="${fObj.data}" download="${fObj.name}">📥 ${fObj.name} (다운로드)</a> `;
+                });
+            }
+
+            let processHtml = '';
+            PROCESS_LIST.forEach((procName, pIndex) => {
+                if (!car.processes || !car.processes[pIndex]) {
+                    car.processes = car.processes || [];
+                    car.processes[pIndex] = { worker: '', date: '', desc: '', photos: [], statusText: '대기중', statusClass: 'btn-ready' };
+                }
+                let pData = car.processes[pIndex];
+                if (!pData.photos) pData.photos = [];
+
+                let photoCount = pData.photos.length;
+                let photoBtnClass = photoCount > 0 ? "photo-btn has-photo" : "photo-btn";
+                let photoBtnText = photoCount > 0 ? `📷 사진(${photoCount})` : "📷 사진추가";
+
+                processHtml += `
+                    <div class="process-box">
+                        <div class="process-header">
+                            <div>
+                                <span>${procName}</span>
+                                <button class="${photoBtnClass}" onclick="handleProcessPhoto(${carIndex}, ${pIndex})">${photoBtnText}</button>
+                            </div>
+                            <button class="status-btn ${pData.statusClass}" onclick="changeStatus(${carIndex}, ${pIndex})">${pData.statusText}</button>
+                        </div>
+                        <div class="process-details">
+                            <div class="process-details-row">
+                                <span style="font-size:11px; color:#555; width:30px;">담당:</span>
+                                <input type="text" value="${pData.worker || ''}" placeholder="담당자" style="flex:1;" onchange="updateProcessField(${carIndex}, ${pIndex}, 'worker', this.value)">
+                                <span style="font-size:11px; color:#555; width:30px;">기한:</span>
+                                <input type="date" value="${pData.date || ''}" style="width:110px;" onchange="updateProcessField(${carIndex}, ${pIndex}, 'date', this.value)">
+                            </div>
+                            <div class="process-details-row">
+                                <span style="font-size:11px; color:#555; width:30px;">세부:</span>
+                                <input type="text" value="${pData.desc || ''}" placeholder="세부사항 입력" style="flex:1;" onchange="updateProcessField(${carIndex}, ${pIndex}, 'desc', this.value)">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            let issueHtml = '';
+            if (car.issues && car.issues.length > 0) {
+                car.issues.forEach((iss, issueIdx) => {
+                    issueHtml += `
+                        <div class="issue-item" onclick="openIssueModal(${carIndex}, ${issueIdx})">
+                            <b>[문제보고]</b> ${iss.text} <small style="color:#888;">(${iss.time})</small>
+                            <div style="font-size:11px; color:#007bff; margin-top:3px;">👉 터치하여 상세 내용 및 사진 보기</div>
+                        </div>
+                    `;
+                });
+            }
+
+            card.innerHTML = `
+                <div class="car-header" onclick="toggleCard(${carIndex})">
+                    <span class="car-title">🚐 ${car.model} / ${car.number} <small style="color:#666; font-weight:normal;">(출고: ${car.shipDate || '미정'})</small></span>
+                    <span class="toggle-icon" id="icon-${carIndex}">${isOpen ? '▲ 접기' : '▼ 펼치기'}</span>
+                </div>
+                <div class="car-body ${isOpen ? 'active' : ''}" id="body-${carIndex}">
+                    <div style="background:#f8f9fa; padding:8px; border-radius:4px; margin-bottom:8px;">
+                        <b style="color:#2b8a3e; font-size:12px;">🗂️ 가구별 세부 지시사항:</b>
+                        <div style="margin-top:4px;">${memosHtml}</div>
+                    </div>
+                    <div><b>최종 출고일:</b> <span style="color:#d9534f; font-weight:bold;">${car.shipDate || '-'}</span></div>
+                    <div style="margin-top:4px;"><b>CNC 가공 파일:</b><br>${fileHtml}</div>
+                    <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
+                    <div style="font-weight:bold; margin-bottom:5px; color:#007bff;">📋 공정별 담당자, 기한 및 세부사항 관리</div>
+                    ${processHtml}
+                    
+                    ${issueHtml ? `
+                        <div class="issue-section-title">
+                            <span>🚨 이 차량 문제 보고 내역 (${car.issues.length}건)</span>
+                        </div>
+                        <div>${issueHtml}</div>
+                    ` : ''}
+
+                    <div class="card-footer">
+                        <button class="sub-btn edit-btn" onclick="openEditCarModal(${carIndex})">수정</button>
+                        <button class="sub-btn report-btn" onclick="openReportInputModal(${carIndex})">문제보고</button>
+                        <button class="sub-btn delete-btn" onclick="deleteWorkOrder(${carIndex})">삭제</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function addWorkOrder() {
+        const modelEl = document.getElementById('carModel');
+        const numberEl = document.getElementById('carNumber');
+        const memoWoodEl = document.getElementById('memoWood');
+        const memoBedEl = document.getElementById('memoBed');
+        const memoSideEl = document.getElementById('memoSide');
+        const memoSinkEl = document.getElementById('memoSink');
+        const memoEtcEl = document.getElementById('memoEtc');
+        const shipDateEl = document.getElementById('shipDueDate');
+
+        const model = modelEl ? modelEl.value.trim() : '';
+        const number = numberEl ? numberEl.value.trim() : '';
+        const memoWood = memoWoodEl ? memoWoodEl.value.trim() : '';
+        const memoBed = memoBedEl ? memoBedEl.value.trim() : '';
+        const memoSide = memoSideEl ? memoSideEl.value.trim() : '';
+        const memoSink = memoSinkEl ? memoSinkEl.value.trim() : '';
+        const memoEtc = memoEtcEl ? memoEtcEl.value.trim() : '';
+        const shipDate = shipDateEl ? shipDateEl.value : '';
+
+        if(!model || !number) {
+            alert('차종과 차량번호는 필수 입력 항목입니다!');
+            return;
+        }
+
+        saveAndPush('carModel', model);
+        saveAndPush('carNumber', number);
+        updateDatalists();
+
+        let processesData = PROCESS_LIST.map((procName, index) => {
+            let workerField = document.getElementById(`regWorker_${index}`);
+            let dateField = document.getElementById(`regDate_${index}`);
+            let descField = document.getElementById(`regDesc_${index}`);
+            
+            return {
+                worker: workerField ? workerField.value.trim() : '',
+                date: dateField ? dateField.value : '',
+                desc: descField ? descField.value.trim() : '',
+                photos: [],
+                statusText: '대기중',
+                statusClass: 'btn-ready'
+            };
+        });
+
+        let newCar = {
+            model: model,
+            number: number,
+            memos: { wood: memoWood, bed: memoBed, side: memoSide, sink: memoSink, etc: memoEtc },
+            shipDate: shipDate,
+            files: regFiles,
+            processes: processesData,
+            issues: []
+        };
+
+        savedCars.push(newCar);
+        saveOrdersToCloud();
+
+        if (modelEl) modelEl.value = '';
+        if (numberEl) numberEl.value = '';
+        if (memoWoodEl) memoWoodEl.value = '';
+        if (memoBedEl) memoBedEl.value = '';
+        if (memoSideEl) memoSideEl.value = '';
+        if (memoSinkEl) memoSinkEl.value = '';
+        if (memoEtcEl) memoEtcEl.value = '';
+        if (shipDateEl) shipDateEl.value = '';
+        
+        initRegisterProcessInputs();
+        alert(`[${model} / ${number}] 차량 작업 지시가 클라우드에 등록되었습니다!`);
+    }
+
+    function deleteWorkOrder(carIndex) {
+        if (!confirm("이 작업 지시 내역을 삭제하시겠습니까?")) return;
+        savedCars.splice(carIndex, 1);
+        saveOrdersToCloud();
+    }
+
+    function updateProcessField(carIndex, procIndex, field, value) {
+        if (savedCars[carIndex] && savedCars[carIndex].processes[procIndex]) {
+            savedCars[carIndex].processes[procIndex][field] = value.trim();
+            saveOrdersToCloud();
+        }
+    }
+
+    function changeStatus(carIndex, procIndex) {
+        if (!savedCars[carIndex] || !savedCars[carIndex].processes[procIndex]) return;
+        let pData = savedCars[carIndex].processes[procIndex];
+
+        if(pData.statusText === '대기중') {
+            pData.statusText = '진행중';
+            pData.statusClass = 'btn-ing';
+        } else if(pData.statusText === '진행중') {
+            pData.statusText = '완료';
+            pData.statusClass = 'btn-done';
+        } else {
+            pData.statusText = '대기중';
+            pData.statusClass = 'btn-ready';
+        }
+
+        saveOrdersToCloud();
+    }
+
+    function openEditCarModal(carIndex) {
+        activeEditCarIndex = carIndex;
+        let car = savedCars[carIndex];
+
+        document.getElementById('editCarModelInput').value = car.model || '';
+        document.getElementById('editCarNumberInput').value = car.number || '';
+        document.getElementById('editMemoWood').value = (car.memos && car.memos.wood) ? car.memos.wood : '';
+        document.getElementById('editMemoBed').value = (car.memos && car.memos.bed) ? car.memos.bed : '';
+        document.getElementById('editMemoSide').value = (car.memos && car.memos.side) ? car.memos.side : '';
+        document.getElementById('editMemoSink').value = (car.memos && car.memos.sink) ? car.memos.sink : '';
+        document.getElementById('editMemoEtc').value = (car.memos && car.memos.etc) ? car.memos.etc : '';
+
+        editFiles = car.files ? [...car.files] : [];
+        renderFileTags('edit');
+
+        const editProcessContainer = document.getElementById('editProcessContainer');
+        editProcessContainer.innerHTML = '';
+        PROCESS_LIST.forEach((procName, pIndex) => {
+            let pData = (car.processes && car.processes[pIndex]) ? car.processes[pIndex] : { worker: '', date: '', desc: '' };
+            editProcessContainer.innerHTML += `
+                <div class="process-input-row">
+                    <label>${procName}</label>
+                    <div class="process-inputs-grid">
+                        <input type="text" id="editWorker_${pIndex}" value="${pData.worker || ''}" placeholder="담당자 이름" style="flex:1;">
+                        <input type="date" id="editDate_${pIndex}" value="${pData.date || ''}" style="flex:1.2;">
+                    </div>
+                    <input type="text" id="editDesc_${pIndex}" value="${pData.desc || ''}" placeholder="공정 세부사항" style="width:100%; padding:6px; font-size:12px; margin-top:3px;">
+                </div>
+            `;
+        });
+
+        document.getElementById('editCarShipDateInput').value = car.shipDate || '';
+        document.getElementById('editCarModal').style.display = 'flex';
+    }
+
+    function closeEditCarModal() {
+        document.getElementById('editCarModal').style.display = 'none';
+        activeEditCarIndex = null;
+    }
+
+    function saveEditedCarInfo() {
+        let newModel = document.getElementById('editCarModelInput').value.trim();
+        let newNumber = document.getElementById('editCarNumberInput').value.trim();
+        let newShipDate = document.getElementById('editCarShipDateInput').value;
+
+        if (!newModel || !newNumber) {
+            alert('차종과 차량번호는 필수 입력 항목입니다!');
+            return;
+        }
+
+        let car = savedCars[activeEditCarIndex];
+        car.model = newModel;
+        car.number = newNumber;
+        car.shipDate = newShipDate;
+        car.files = editFiles;
+        car.memos = {
+            wood: document.getElementById('editMemoWood').value.trim(),
+            bed: document.getElementById('editMemoBed').value.trim(),
+            side: document.getElementById('editMemoSide').value.trim(),
+            sink: document.getElementById('editMemoSink').value.trim(),
+            etc: document.getElementById('editMemoEtc').value.trim()
+        };
+
+        if (!car.processes) car.processes = [];
+        PROCESS_LIST.forEach((procName, pIndex) => {
+            if (!car.processes[pIndex]) {
+                car.processes[pIndex] = { photos: [], statusText: '대기중', statusClass: 'btn-ready' };
+            }
+            car.processes[pIndex].worker = document.getElementById(`editWorker_${pIndex}`).value.trim();
+            car.processes[pIndex].date = document.getElementById(`editDate_${pIndex}`).value;
+            car.processes[pIndex].desc = document.getElementById(`editDesc_${pIndex}`).value.trim();
+        });
+
+        saveOrdersToCloud();
+        closeEditCarModal();
+        alert('수정 정보가 저장되었습니다!');
+    }
+
+    function toggleCard(carIndex) {
+        if (openCards.has(carIndex)) {
+            openCards.delete(carIndex);
+        } else {
+            openCards.add(carIndex);
+        }
+        renderCards();
+    }
+
+    function compressImage(file, callback) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let img = new Image();
+            img.onload = function() {
+                let canvas = document.createElement('canvas');
+                let MAX_WIDTH = 800;
+                let MAX_HEIGHT = 800;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                } else {
+                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                }
+
+                canvas.width = width; canvas.height = height;
+                let ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                callback(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function handleProcessPhoto(carIndex, pIndex) {
+        let pData = savedCars[carIndex].processes[pIndex];
+        if (!pData.photos) pData.photos = [];
+
+        if (pData.photos.length > 0) {
+            openProcessPhotoModal(carIndex, pIndex, PROCESS_LIST[pIndex], pData.photos);
+        } else {
+            triggerProcessPhotoUpload(carIndex, pIndex);
+        }
+    }
+
+    function triggerProcessPhotoUpload(carIndex, pIndex) {
+        let input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = true;
+        input.onchange = e => {
+            let files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            let loadedCount = 0;
+            if (!savedCars[carIndex].processes[pIndex].photos) {
+                savedCars[carIndex].processes[pIndex].photos = [];
+            }
+
+            Array.from(files).forEach(file => {
+                compressImage(file, function(compressedDataUrl) {
+                    savedCars[carIndex].processes[pIndex].photos.push(compressedDataUrl);
+                    loadedCount++;
+
+                    if (loadedCount === files.length) {
+                        saveOrdersToCloud();
+                        openProcessPhotoModal(carIndex, pIndex, PROCESS_LIST[pIndex], savedCars[carIndex].processes[pIndex].photos);
+                    }
+                });
+            });
+        };
+        input.click();
+    }
+
+    function openProcessPhotoModal(carIndex, pIndex, procName, photosArr) {
+        let modalText = document.getElementById('processModalBodyText');
+        modalText.innerHTML = `<b>[공정명]</b> ${procName}<br><b>[등록된 사진]</b> 총 ${photosArr.length}장`;
+
+        let photoContainer = document.getElementById('processModalPhotoContainer');
+        let gridHtml = '<div class="photo-grid">';
+        
+        photosArr.forEach((photoSrc, photoIdx) => {
+            gridHtml += `
+                <div class="photo-card-item">
+                    <img src="${photoSrc}" class="photo-thumb" onclick="zoomImage('${photoSrc}')">
+                    <button class="photo-delete-btn" onclick="deleteProcessPhoto(${carIndex}, ${pIndex}, ${photoIdx})">🗑️ 삭제</button>
+                </div>
+            `;
+        });
+        gridHtml += '</div>';
+
+        gridHtml += `
+            <button onclick="triggerProcessPhotoUpload(${carIndex}, ${pIndex})" style="width:100%; background:#28a745; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:13px; margin-top:15px; cursor:pointer;">
+                ➕ 사진 추가로 첨부하기
+            </button>
+        `;
+
+        photoContainer.innerHTML = gridHtml;
+        document.getElementById('processPhotoModal').style.display = 'flex';
+    }
+
+    function closeProcessPhotoModal() {
+        document.getElementById('processPhotoModal').style.display = 'none';
+    }
+
+    function deleteProcessPhoto(carIndex, pIndex, photoIdx) {
+        if (!confirm("이 사진을 삭제하시겠습니까?")) return;
+        savedCars[carIndex].processes[pIndex].photos.splice(photoIdx, 1);
+        saveOrdersToCloud();
+        closeProcessPhotoModal();
+    }
+
+    function openReportInputModal(carIndex) {
+        activeReportCarIndex = carIndex;
+        tempReportPhotos = [];
+        document.getElementById('reportTextContent').value = '';
+        updateReportPhotoPreview();
+        document.getElementById('reportInputModal').style.display = 'flex';
+    }
+
+    function closeReportInputModal() {
+        document.getElementById('reportInputModal').style.display = 'none';
+        activeReportCarIndex = null;
+        tempReportPhotos = [];
+    }
+
+    function triggerReportPhotoSelect() {
+        document.getElementById('reportPhotoHiddenInput').click();
+    }
+
+    function handleReportPhotoSelect(input) {
+        let files = input.files;
+        if (!files || files.length === 0) return;
+
+        Array.from(files).forEach(file => {
+            compressImage(file, function(compressedDataUrl) {
+                tempReportPhotos.push(compressedDataUrl);
+                updateReportPhotoPreview();
+            });
+        });
+        input.value = '';
+    }
+
+    function updateReportPhotoPreview() {
+        document.getElementById('reportPhotoCount').innerText = `${tempReportPhotos.length}장 선택됨`;
+        let grid = document.getElementById('reportPhotoPreviewGrid');
+        let html = '';
+        tempReportPhotos.forEach((photoSrc, idx) => {
+            html += `
+                <div class="photo-card-item">
+                    <img src="${photoSrc}" class="photo-thumb" onclick="zoomImage('${photoSrc}')">
+                    <button class="photo-delete-btn" onclick="removeTempReportPhoto(${idx})">🗑️ 취소</button>
+                </div>
+            `;
+        });
+        grid.innerHTML = html;
+    }
+
+    function removeTempReportPhoto(idx) {
+        tempReportPhotos.splice(idx, 1);
+        updateReportPhotoPreview();
+    }
+
+    function submitReportIssue() {
+        let text = document.getElementById('reportTextContent').value.trim();
+        if (!text) { alert('문제 내용을 입력해주세요!'); return; }
+
+        let now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (!savedCars[activeReportCarIndex].issues) savedCars[activeReportCarIndex].issues = [];
+
+        savedCars[activeReportCarIndex].issues.push({ text: text, photos: tempReportPhotos, time: now });
+        saveOrdersToCloud();
+        closeReportInputModal();
+        alert('문제 보고가 클라우드에 공유되었습니다!');
+    }
+
+    function openIssueModal(carIndex, issueIdx) {
+        let car = savedCars[carIndex];
+        let iss = car.issues[issueIdx];
+        let photos = iss.photos || [];
+
+        let modalText = document.getElementById('modalBodyText');
+        modalText.innerHTML = `<b>[대상 차량]</b> ${car.model} / ${car.number}<br><b>[보고 시각]</b> ${iss.time}<br><br><b>[내용]</b><br>${iss.text}`;
+
+        let photoContainer = document.getElementById('modalBodyPhotoContainer');
+        let gridHtml = '';
+        if (photos.length > 0) {
+            gridHtml += '<div class="photo-grid" style="margin-top:10px;">';
+            photos.forEach((photoSrc) => {
+                gridHtml += `<div class="photo-card-item"><img src="${photoSrc}" class="photo-thumb" onclick="zoomImage('${photoSrc}')"></div>`;
+            });
+            gridHtml += '</div>';
+        }
+        photoContainer.innerHTML = gridHtml;
+        document.getElementById('issueModal').style.display = 'flex';
+    }
+
+    function closeIssueModal() {
+        document.getElementById('issueModal').style.display = 'none';
+    }
+
+    function zoomImage(src) {
+        document.getElementById('zoomImg').src = src;
+        document.getElementById('zoomOverlay').style.display = 'flex';
+    }
+
+    function closeZoom() {
+        document.getElementById('zoomOverlay').style.display = 'none';
+    }
+</script>
+
+</body>
+</html>
