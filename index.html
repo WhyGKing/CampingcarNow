@@ -503,7 +503,7 @@
             card.innerHTML = `
                 <div class="car-header" onclick="toggleCard(${carIndex})">
                     <span class="car-title">🚐 ${car.model} / ${car.number} <small style="color:#666; font-weight:normal;">(출고: ${car.shipDate || '미정'})</small></span>
-                    <span class="toggle-icon" id="icon-${carIndex}">${isOpen ? '▲ 접기' : '▼ 펼치기'}</span>
+                    <span class="toggle-icon" id="icon-${carIndex}">${isOpen ? '▲' : '▼'}</span>
                 </div>
                 <div class="car-body ${isOpen ? 'active' : ''}" id="body-${carIndex}">
                     <div style="background:#f8f9fa; padding:8px; border-radius:4px; margin-bottom:8px;">
