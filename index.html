@@ -125,6 +125,10 @@
             <input type="text" id="carNumber" list="carNumberList" placeholder="예: 1234호">
             <datalist id="carNumberList"></datalist>
         </div>
+        <div class="form-group">
+            <label>등록날짜:</label>
+            <input type="date" id="createdAt">
+        </div>
         
         <label style="margin-top: 10px; font-weight:bold; color:#007bff;">🗂️ 가구별 세부 지시사항</label>
         <div class="furniture-input-box">
@@ -196,6 +200,10 @@
             <div class="form-group">
                 <label>차량번호:</label>
                 <input type="text" id="editCarNumberInput">
+            </div>
+            <div class="form-group">
+                <label>등록날짜:</label>
+                <input type="date" id="editCreatedAtInput">
             </div>
 
             <label style="margin-top: 12px; font-weight:bold; color:#2b8a3e;">🗂️ 가구별 세부 지시사항 수정</label>
@@ -331,11 +339,17 @@
     let tempReportPhotos = [];
     let regFiles = [];
     let editFiles = [];
-    let currentFilter = 'all'; // 현재 선택된 필터 상태 ('all', 'progress', 'completed', 'archived')
+    let currentFilter = 'all';
 
     window.onload = function() {
         updateDatalists();
         initRegisterProcessInputs();
+        
+        // 등록날짜 입력란 기본값을 오늘 날짜로 세팅
+        const todayStr = new Date().toISOString().split('T')[0];
+        const createdAtEl = document.getElementById('createdAt');
+        if (createdAtEl) createdAtEl.value = todayStr;
+
         carsRef.on('value', (snapshot) => {
             const data = snapshot.val();
             savedCars = data ? Object.values(data) : [];
@@ -343,7 +357,6 @@
         });
     };
 
-    // 필터 변경 함수
     function filterCars(status, btnElement) {
         currentFilter = status;
         document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
@@ -351,7 +364,6 @@
         renderCards();
     }
 
-    // 아카이브 처리 함수
     function archiveCar(carIndex) {
         if (confirm('이 완료된 차량을 아카이브(보관) 처리하시겠습니까?\n메인 현황판에서 숨겨집니다.')) {
             savedCars[carIndex].isArchived = true;
@@ -359,7 +371,6 @@
         }
     }
 
-    // 아카이브 해제 함수
     function unarchiveCar(carIndex) {
         if (confirm('이 차량을 아카이브함에서 다시 메인 현황판으로 복원하시겠습니까?')) {
             savedCars[carIndex].isArchived = false;
@@ -479,7 +490,6 @@
         savedCars.forEach((car, carIndex) => {
             const isArchived = car.isArchived === true;
 
-            // 7단계 공정이 모두 완료되었는지 판별 (모두 '완료' 상태이거나 공정이 완료된 경우)
             let allDone = true;
             if (!car.processes || car.processes.length < PROCESS_LIST.length) {
                 allDone = false;
@@ -491,16 +501,14 @@
                 });
             }
 
-            // 필터링 조건에 따른 표시 여부 결정
             if (currentFilter === 'archived' && !isArchived) return;
-            if (currentFilter !== 'archived' && isArchived) return; // 평소에는 아카이브된 차량 숨김
-            if (currentFilter === 'progress' && allDone) return;    // 진행중 탭에서는 완료된 건 제외
-            if (currentFilter === 'completed' && !allDone) return;  // 완료건 탭에서는 진행중인 건 제외
+            if (currentFilter !== 'archived' && isArchived) return;
+            if (currentFilter === 'progress' && allDone) return;
+            if (currentFilter === 'completed' && !allDone) return;
 
             visibleCount++;
 
             const card = document.createElement('div');
-            // 진행중 vs 완료 카드 디자인 클래스 분기
             card.className = `car-card ${allDone ? 'completed' : 'in-progress'}`;
             let isOpen = openCards.has(carIndex);
 
@@ -572,14 +580,13 @@
                 });
             }
 
-            // 우측 상태 배지 및 아카이브 버튼 제어
             let statusBadgeHtml = allDone 
                 ? '<span class="badge-completed">완료</span>' 
                 : '<span class="badge-in-progress">진행중</span>';
 
             card.innerHTML = `
                 <div class="car-header" onclick="toggleCard(${carIndex})">
-                    <span class="car-title">🚐 ${car.model} / ${car.number} <small style="color:#666; font-weight:normal;">(출고: ${car.shipDate || '미정'})</small></span>
+                    <span class="car-title">🚐 ${car.model} / ${car.number} <small style="color:#666; font-weight:normal;">(등록: ${car.createdAt || '-'} / 출고: ${car.shipDate || '미정'})</small></span>
                     <div style="display:flex; align-items:center; gap:8px;">
                         ${statusBadgeHtml}
                         <span class="toggle-icon" id="icon-${carIndex}">${isOpen ? '▲' : '▼'}</span>
@@ -590,6 +597,7 @@
                         <b style="color:#2b8a3e; font-size:12px;">🗂️ 가구별 세부 지시사항:</b>
                         <div style="margin-top:4px;">${memosHtml}</div>
                     </div>
+                    <div style="margin-bottom:4px;"><b>등록날짜:</b> <span style="color:#333; font-weight:bold;">${car.createdAt || '-'}</span></div>
                     <div><b>최종 출고일:</b> <span style="color:#d9534f; font-weight:bold;">${car.shipDate || '-'}</span></div>
                     <div style="margin-top:4px;"><b>CNC 가공 파일:</b><br>${fileHtml}</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
@@ -623,6 +631,7 @@
     function addWorkOrder() {
         const modelEl = document.getElementById('carModel');
         const numberEl = document.getElementById('carNumber');
+        const createdAtEl = document.getElementById('createdAt');
         const memoWoodEl = document.getElementById('memoWood');
         const memoBedEl = document.getElementById('memoBed');
         const memoSideEl = document.getElementById('memoSide');
@@ -632,6 +641,7 @@
 
         const model = modelEl ? modelEl.value.trim() : '';
         const number = numberEl ? numberEl.value.trim() : '';
+        const createdAt = createdAtEl ? createdAtEl.value : '';
         const memoWood = memoWoodEl ? memoWoodEl.value.trim() : '';
         const memoBed = memoBedEl ? memoBedEl.value.trim() : '';
         const memoSide = memoSideEl ? memoSideEl.value.trim() : '';
@@ -666,6 +676,7 @@
         let newCar = {
             model: model,
             number: number,
+            createdAt: createdAt,
             memos: { wood: memoWood, bed: memoBed, side: memoSide, sink: memoSink, etc: memoEtc },
             shipDate: shipDate,
             files: regFiles,
@@ -679,6 +690,7 @@
 
         if (modelEl) modelEl.value = '';
         if (numberEl) numberEl.value = '';
+        if (createdAtEl) createdAtEl.value = new Date().toISOString().split('T')[0]; // 다시 오늘 날짜로 리셋
         if (memoWoodEl) memoWoodEl.value = '';
         if (memoBedEl) memoBedEl.value = '';
         if (memoSideEl) memoSideEl.value = '';
@@ -727,6 +739,7 @@
 
         document.getElementById('editCarModelInput').value = car.model || '';
         document.getElementById('editCarNumberInput').value = car.number || '';
+        document.getElementById('editCreatedAtInput').value = car.createdAt || '';
         document.getElementById('editMemoWood').value = (car.memos && car.memos.wood) ? car.memos.wood : '';
         document.getElementById('editMemoBed').value = (car.memos && car.memos.bed) ? car.memos.bed : '';
         document.getElementById('editMemoSide').value = (car.memos && car.memos.side) ? car.memos.side : '';
@@ -764,6 +777,7 @@
     function saveEditedCarInfo() {
         let newModel = document.getElementById('editCarModelInput').value.trim();
         let newNumber = document.getElementById('editCarNumberInput').value.trim();
+        let newCreatedAt = document.getElementById('editCreatedAtInput').value;
         let newShipDate = document.getElementById('editCarShipDateInput').value;
 
         if (!newModel || !newNumber) {
@@ -774,6 +788,7 @@
         let car = savedCars[activeEditCarIndex];
         car.model = newModel;
         car.number = newNumber;
+        car.createdAt = newCreatedAt;
         car.shipDate = newShipDate;
         car.files = editFiles;
         car.memos = {
