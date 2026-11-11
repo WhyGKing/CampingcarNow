@@ -507,7 +507,7 @@
                 } else {
                     matchingTasks.forEach(t => {
                         let statusBadge = t.status === 'completed' ? '✅ 완료' : (t.status === 'in-progress' ? '🔄 진행중' : '⏳ 대기');
-                        let clickAction = t.isCar ? `window.location.href = 'index.html'` : `openTaskModal('${t.id}')`;
+                        let clickAction = t.isCar ? `window.location.href = 'campingcar.html'` : `openTaskModal('${t.id}')`;
 
                         tasksHtml += `
                             <div class="weekly-task-item ${t.status}" onclick="${clickAction}" title="클릭하여 현황판 이동 또는 상세 보기">
