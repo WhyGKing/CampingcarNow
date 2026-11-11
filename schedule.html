@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주간 업무 일정 관리 (클라우드 실시간 연동)</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --border-color: #d1d5db;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --warning: #d97706;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 16px; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; background: #ffffff; padding: 14px 18px;
+            border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); gap: 10px; flex-wrap: wrap;
+        }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        h1 { font-size: 18px; color: var(--text-main); white-space: nowrap; }
+        .archive-btn { background-color: #4b5563; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .header-date { font-size: 13px; font-weight: 600; color: var(--text-sub); }
+
+        .main-layout { display: grid; grid-template-columns: 380px 1fr; gap: 16px; margin-bottom: 16px; }
+        @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } }
+
+        .calendar-container { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: bold; font-size: 16px; }
+        .cal-header button { background: none; border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+        .cal-day-name { font-size: 12px; font-weight: bold; color: var(--text-sub); padding: 6px 0; }
+        .cal-day-name:first-child { color: #ef4444; }
+        .cal-day-name:last-child { color: #3b82f6; }
+
+        .cal-cell {
+            aspect-ratio: 1; display: flex; flex-direction: column; justify-content: flex-start;
+            align-items: center; padding: 4px; font-size: 13px; border-radius: 4px; cursor: pointer; border: 1px solid transparent; position: relative;
+        }
+        .cal-cell:hover { background: #f3f4f6; }
+        .cal-cell.other-month { color: #d1d5db; }
+        .cal-cell.selected { background: #eff6ff; border-color: var(--primary); font-weight: bold; }
+        .cal-cell.today { border: 1px dashed var(--primary); }
+        .dot-indicator { width: 5px; height: 5px; background-color: var(--primary); border-radius: 50%; margin-top: 2px; }
+
+        .form-container { background: #ffffff; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .form-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .form-container input, .form-container button { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; width: 100%; }
+        .form-container label { font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 2px; display: block; }
+        .form-actions { display: flex; gap: 8px; margin-top: 4px; }
+        .submit-btn { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: 600; flex: 1; padding: 10px; border-radius: 4px; }
+        .cancel-btn { background-color: #6b7280; color: white; border: none; cursor: pointer; font-weight: 600; width: 100px; padding: 10px; border-radius: 4px; }
+
+        .weekly-section { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .weekly-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .weekly-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        @media (max-width: 900px) { .weekly-grid { grid-template-columns: 1fr; } }
+
+        .weekly-day-box { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; min-height: 180px; }
+        .weekly-day-box.today-box { border-color: var(--primary); background: #f0f7ff; }
+        .weekly-day-header { font-size: 12px; font-weight: bold; color: var(--text-main); margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; cursor: pointer; }
+        .weekly-day-header:hover { color: var(--primary); }
+
+        .weekly-task-item {
+            font-size: 13px; font-weight: 500; background: white; padding: 5px 8px; border-radius: 4px;
+            margin-bottom: 5px; border-left: 3.5px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .weekly-task-item.pending { border-left-color: #f59e0b; }
+        .weekly-task-item.in-progress { border-left-color: #3b82f6; }
+        .weekly-task-item.completed { border-left-color: #10b981; text-decoration: line-through; color: #9ca3af; }
+        .task-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-grow: 1; }
+        .task-status-badge { font-size: 11px; font-weight: 600; padding: 1px 4px; border-radius: 3px; background: #f3f4f6; color: #4b5563; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
+        .modal-content { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 450px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .close-btn { background: none; border: none; font-size: 18px; cursor: pointer; }
+        .card-detail-view { font-size: 14px; display: flex; flex-direction: column; gap: 10px; }
+        .card-detail-row { display: flex; flex-direction: column; gap: 2px; }
+        .card-detail-label { font-size: 11px; font-weight: 600; color: var(--text-sub); }
+        .card-detail-value { font-size: 14px; color: var(--text-main); font-weight: 500; }
+        .worker-badges-container { display: flex; gap: 4px; flex-wrap: wrap; }
+        .worker-badge { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); }
+        .card-modal-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 12px; }
+        .card-modal-actions button { padding: 6px 12px; font-size: 12px; border-radius: 4px; cursor: pointer; border: 1px solid var(--border-color); background: white; }
+        .edit-btn { color: var(--primary); border-color: #93c5fd; background-color: #eff6ff; }
+        .delete-btn { color: #ef4444; border-color: #fca5a5; background-color: #fff5f5; }
+        .archive-item { background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border-color); font-size: 13px; }
+    </style>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+<body>
+
+    <header>
+        <div class="header-left">
+            <h1>📅 주간 업무 일정</h1>
+            <button class="archive-btn" onclick="openArchiveModal()">📂 아카이브</button>
+        </div>
+        <span class="header-date" id="header-today"></span>
+    </header>
+
+    <div class="main-layout">
+        <!-- 달력 영역 -->
+        <div class="calendar-container">
+            <div class="cal-header">
+                <button onclick="changeMonth(-1)">&lt;</button>
+                <span id="cal-month-title">2026년 3월</span>
+                <button onclick="changeMonth(1)">&gt;</button>
+            </div>
+            <div class="cal-grid">
+                <div class="cal-day-name">일</div>
+                <div class="cal-day-name">월</div>
+                <div class="cal-day-name">화</div>
+                <div class="cal-day-name">수</div>
+                <div class="cal-day-name">목</div>
+                <div class="cal-day-name">금</div>
+                <div class="cal-day-name">토</div>
+            </div>
+            <div class="cal-grid" id="cal-days-container" style="margin-top: 4px;"></div>
+        </div>
+
+        <!-- 업무 등록 폼 영역 -->
+        <div class="form-container">
+            <h3 id="form-title" style="font-size: 14px; margin-bottom: 2px; color: var(--text-main);">➕ 새 업무 등록/수정</h3>
+            <div class="form-row">
+                <div><label>업무명 (필수)</label><input type="text" id="taskName" placeholder="예: 거실 수납장 제작"></div>
+                <div><label>세부사항 (선택)</label><input type="text" id="taskDetail" placeholder="예: 상부장 도어 경첩 부착"></div>
+            </div>
+            <div>
+                <label>담당자 (최대 3명)</label>
+                <div class="form-row-3">
+                    <input type="text" id="taskWorker1" placeholder="담당자 1 (필수)">
+                    <input type="text" id="taskWorker2" placeholder="담당자 2">
+                    <input type="text" id="taskWorker3" placeholder="담당자 3">
+                </div>
+            </div>
+            <div class="form-row">
+                <div><label>시작일</label><input type="date" id="taskStartDate" onchange="onStartDateChange()"></div>
+                <div><label>종료일 (기본: 시작일)</label><input type="date" id="taskEndDate"></div>
+            </div>
+            <div class="form-row" style="grid-template-columns: 1fr;">
+                <div><label>비고 / 특이사항 (선택)</label><input type="text" id="taskMemo" placeholder="특이사항 입력"></div>
+            </div>
+            <div class="form-actions" id="form-actions-container">
+                <button class="submit-btn" id="form-submit-btn" onclick="processTaskSubmit()">업무 추가/수정</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 주간 업무표 영역 -->
+    <div class="weekly-section">
+        <div class="weekly-title">
+            <span>📊 주간 업무표 (업무 클릭 시 상세 보기 및 수정)</span>
+            <span style="font-size: 12px; font-weight: normal; color: var(--text-sub);">날짜를 누르면 해당 날짜로 이동합니다</span>
+        </div>
+        <div class="weekly-grid" id="weekly-grid-container"></div>
+    </div>
+
+    <!-- 모달 창들 -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="modalTaskTitle">업무 카드</h3><button class="close-btn" onclick="closeTaskModal()">✕</button></div>
+            <div class="card-detail-view" id="modalTaskBody"></div>
+            <div class="card-modal-actions" id="modalTaskFooter"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="archiveModal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>📂 완료 작업 아카이브함</h3><button class="close-btn" onclick="closeArchiveModal()">✕</button></div>
+            <div id="archive-list-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAf-9eF-Qf-aIffLGGZbQ76Hs_uzlSBcT0",
+            authDomain: "campingcarnow-4b9a9.firebaseapp.com",
+            databaseURL: "https://campingcarnow-4b9a9-default-rtdb.firebaseio.com",
+            projectId: "campingcarnow-4b9a9",
+            storageBucket: "campingcarnow-4b9a9.firebasestorage.app",
+            messagingSenderId: "523870851303",
+            appId: "1:523870851303:web:f43a82e942f421b79a1242",
+            measurementId: "G-LMHVBDZRMP"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const carsRef = db.ref('factory_cars');
+        const manualTasksRef = db.ref('schedule_manual_tasks'); // 🌟 수동 업무도 클라우드 저장소로 변경
+
+        function formatDate(d) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        const todayStr = formatDate(new Date());
+        document.getElementById('header-today').innerText = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+
+        document.getElementById('taskStartDate').value = todayStr;
+        document.getElementById('taskEndDate').value = todayStr;
+
+        function onStartDateChange() {
+            const startVal = document.getElementById('taskStartDate').value;
+            const endInput = document.getElementById('taskEndDate');
+            if (!endInput.value || endInput.value < startVal) {
+                endInput.value = startVal;
+            }
+        }
+
+        let manualTasks = [];
+        let archives = JSON.parse(localStorage.getItem('schedule_archives')) || [];
+        let factoryCars = [];
+
+        let selectedDateStr = todayStr;
+        let currentCalYear = new Date().getFullYear();
+        let currentCalMonth = new Date().getMonth();
+        let editingTaskId = null;
+
+        // 🌟 Firebase 실시간 리스너 (차량 데이터 & 수동 업무 데이터를 동시에 실시간 수신)
+        carsRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            factoryCars = data ? Object.values(data) : [];
+            renderCalendar();
+            renderWeeklySummary();
+        });
+
+        manualTasksRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            manualTasks = data ? Object.values(data) : [];
+            renderCalendar();
+            renderWeeklySummary();
+        });
+
+        function saveManualTasksToCloud() {
+            // 배열을 객체 형태로 변환하여 Firebase에 저장
+            let tasksObj = {};
+            manualTasks.forEach(t => {
+                tasksObj[t.id] = t;
+            });
+            manualTasksRef.set(tasksObj);
+        }
+
+        function getWorkerColor(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const hue = Math.abs(hash) % 360;
+            return `background-color: hsl(${hue}, 70%, 88%); border-color: hsl(${hue}, 70%, 75%); color: hsl(${hue}, 70%, 25%);`;
+        }
+
+        function computeCarStatus(processes) {
+            if (!processes || processes.length === 0) return 'pending';
+            let allDone = true;
+            let hasAnyActivity = false;
+
+            processes.forEach(p => {
+                if (p.statusText === '완료') {
+                    hasAnyActivity = true;
+                } else if (p.statusText === '진행중') {
+                    hasAnyActivity = true;
+                    allDone = false;
+                } else {
+                    allDone = false;
+                }
+            });
+
+            if (allDone) return 'completed';
+            if (hasAnyActivity) return 'in-progress';
+            return 'pending';
+        }
+
+        function getAllTasks() {
+            let carTasks = [];
+            factoryCars.forEach((car, idx) => {
+                if (car.isArchived) return;
+                let status = computeCarStatus(car.processes);
+                carTasks.push({
+                    id: `car_task_${idx}`,
+                    name: `${car.model} (${car.number})`,
+                    workers: ["공장팀"],
+                    detail: car.memos ? car.memos.wood || '통합 현황판 연동 차량' : '통합 현황판 연동 차량',
+                    startDate: car.createdAt || todayStr,
+                    endDate: car.shipDate || (car.createdAt || todayStr),
+                    memo: '현황판 자동 연동 항목',
+                    status: status,
+                    isCar: true
+                });
+            });
+            return [...manualTasks, ...carTasks];
+        }
+
+        function processTaskSubmit() {
+            const name = document.getElementById('taskName').value.trim();
+            const w1 = document.getElementById('taskWorker1').value.trim();
+            const w2 = document.getElementById('taskWorker2').value.trim();
+            const w3 = document.getElementById('taskWorker3').value.trim();
+            const detail = document.getElementById('taskDetail').value.trim();
+            const startDate = document.getElementById('taskStartDate').value;
+            let endDate = document.getElementById('taskEndDate').value;
+            const memo = document.getElementById('taskMemo').value.trim();
+
+            if (!name || !w1) { alert('업무명과 최소 첫 번째 담당자는 필수 입력사항입니다.'); return; }
+            if (!startDate) { alert('시작일을 입력해주세요.'); return; }
+            if (!endDate) endDate = startDate;
+            if (endDate < startDate) { alert('종료일은 시작일보다 빠를 수 없습니다.'); return; }
+
+            const workers = [w1, w2, w3].filter(w => w !== '');
+
+            if (editingTaskId) {
+                const task = manualTasks.find(t => t.id === editingTaskId);
+                if (task) {
+                    task.name = name; task.workers = workers; task.detail = detail;
+                    task.startDate = startDate; task.endDate = endDate; task.memo = memo;
+                }
+                cancelEditMode();
+            } else {
+                const taskId = 'task_' + Date.now();
+                const newTask = {
+                    id: taskId, name, workers, detail: detail || '',
+                    startDate, endDate, memo: memo || '', status: 'pending', isCar: false
+                };
+                manualTasks.push(newTask);
+                document.getElementById('taskName').value = '';
+                document.getElementById('taskWorker1').value = '';
+                document.getElementById('taskWorker2').value = '';
+                document.getElementById('taskWorker3').value = '';
+                document.getElementById('taskDetail').value = '';
+                document.getElementById('taskMemo').value = '';
+                document.getElementById('taskStartDate').value = selectedDateStr;
+                document.getElementById('taskEndDate').value = selectedDateStr;
+            }
+            saveManualTasksToCloud();
+        }
+
+        function enterEditMode(id) {
+            closeTaskModal();
+            const task = manualTasks.find(t => t.id === id);
+            if (!task) return;
+
+            editingTaskId = id;
+            document.getElementById('taskName').value = task.name;
+            document.getElementById('taskDetail').value = task.detail || '';
+            document.getElementById('taskWorker1').value = task.workers[0] || '';
+            document.getElementById('taskWorker2').value = task.workers[1] || '';
+            document.getElementById('taskWorker3').value = task.workers[2] || '';
+            document.getElementById('taskStartDate').value = task.startDate;
+            document.getElementById('taskEndDate').value = task.endDate;
+            document.getElementById('taskMemo').value = task.memo || '';
+
+            document.getElementById('form-title').innerText = '✏️ 업무 정보 수정 중';
+            document.getElementById('form-submit-btn').style.backgroundColor = 'var(--warning)';
+
+            if (!document.getElementById('cancelEditBtn')) {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.id = 'cancelEditBtn'; cancelBtn.className = 'cancel-btn';
+                cancelBtn.innerText = '취소'; cancelBtn.onclick = cancelEditMode;
+                document.getElementById('form-actions-container').appendChild(cancelBtn);
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEditMode() {
+            editingTaskId = null;
+            document.getElementById('form-title').innerText = '➕ 새 업무 등록/수정';
+            document.getElementById('form-submit-btn').style.backgroundColor = 'var(--primary)';
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            if (cancelBtn) cancelBtn.remove();
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskWorker1').value = '';
+            document.getElementById('taskWorker2').value = '';
+            document.getElementById('taskWorker3').value = '';
+            document.getElementById('taskDetail').value = '';
+            document.getElementById('taskMemo').value = '';
+            document.getElementById('taskStartDate').value = selectedDateStr;
+            document.getElementById('taskEndDate').value = selectedDateStr;
+        }
+
+        function changeStatus(id, direction) {
+            const task = manualTasks.find(t => t.id === id);
+            if (!task) return;
+            const stages = ['pending', 'in-progress', 'completed'];
+            const currentIndex = stages.indexOf(task.status);
+            const nextIndex = currentIndex + direction;
+            if (nextIndex >= 0 && nextIndex < stages.length) {
+                task.status = stages[nextIndex];
+                saveManualTasksToCloud();
+                openTaskModal(id);
+            }
+        }
+
+        function deleteTask(id) {
+            if (confirm('해당 업무를 삭제하시겠습니까?')) {
+                manualTasks = manualTasks.filter(t => t.id !== id);
+                closeTaskModal();
+                if (editingTaskId === id) cancelEditMode();
+                saveManualTasksToCloud();
+            }
+        }
+
+        function renderCalendar() {
+            document.getElementById('cal-month-title').innerText = `${currentCalYear}년 ${currentCalMonth + 1}월`;
+            const container = document.getElementById('cal-days-container');
+            container.innerHTML = '';
+
+            const firstDayIndex = new Date(currentCalYear, currentCalMonth, 1).getDay();
+            const lastDay = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+            const prevLastDay = new Date(currentCalYear, currentCalMonth, 0).getDate();
+
+            for (let i = firstDayIndex; i > 0; i--) {
+                const cell = document.createElement('div');
+                cell.className = 'cal-cell other-month';
+                cell.innerText = prevLastDay - i + 1;
+                container.appendChild(cell);
+            }
+
+            const allTasks = getAllTasks();
+
+            for (let i = 1; i <= lastDay; i++) {
+                const monthStr = String(currentCalMonth + 1).padStart(2, '0');
+                const dayStr = String(i).padStart(2, '0');
+                const dateStr = `${currentCalYear}-${monthStr}-${dayStr}`;
+
+                const cell = document.createElement('div');
+                cell.className = 'cal-cell';
+                if (dateStr === todayStr) cell.classList.add('today');
+                if (dateStr === selectedDateStr) cell.classList.add('selected');
+
+                const hasTask = allTasks.some(t => dateStr >= t.startDate && dateStr <= t.endDate);
+
+                cell.innerHTML = `<span>${i}</span>${hasTask ? '<div class="dot-indicator"></div>' : ''}`;
+                cell.onclick = () => {
+                    selectedDateStr = dateStr;
+                    currentCalYear = parseInt(dateStr.split('-')[0]);
+                    currentCalMonth = parseInt(dateStr.split('-')[1]) - 1;
+                    if (!editingTaskId) {
+                        document.getElementById('taskStartDate').value = selectedDateStr;
+                        document.getElementById('taskEndDate').value = selectedDateStr;
+                    }
+                    renderCalendar();
+                    renderWeeklySummary();
+                };
+                container.appendChild(cell);
+            }
+
+            const totalCells = firstDayIndex + lastDay;
+            const nextDays = totalCells <= 35 ? 35 - totalCells : 42 - totalCells;
+            for (let i = 1; i <= nextDays; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cal-cell other-month';
+                cell.innerText = i;
+                container.appendChild(cell);
+            }
+        }
+
+        function changeMonth(dir) {
+            currentCalMonth += dir;
+            if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+            else if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+            renderCalendar();
+        }
+
+        function renderWeeklySummary() {
+            const gridContainer = document.getElementById('weekly-grid-container');
+            gridContainer.innerHTML = '';
+
+            const selDate = new Date(selectedDateStr);
+            const dayOfWeek = selDate.getDay(); 
+            const diffToMon = selDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+            const monday = new Date(selDate.setDate(diffToMon));
+
+            const weekDays = ['월', '화', '수', '목', '금', '토', '일'];
+            const allTasks = getAllTasks();
+            
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dStr = formatDate(d);
+
+                const dayBox = document.createElement('div');
+                dayBox.className = 'weekly-day-box';
+                if (dStr === todayStr) dayBox.classList.add('today-box');
+                if (dStr === selectedDateStr) { dayBox.style.borderWidth = '2px'; dayBox.style.borderColor = 'var(--primary)'; }
+
+                const monthDay = `${d.getMonth() + 1}/${d.getDate()}`;
+                let dayHeaderHtml = `<div class="weekly-day-header" onclick="selectDateFromWeekly('${dStr}')">${weekDays[i]} (${monthDay})</div>`;
+
+                const matchingTasks = allTasks.filter(t => dStr >= t.startDate && dStr <= t.endDate);
+                let tasksHtml = '';
+                
+                if (matchingTasks.length === 0) {
+                    tasksHtml = `<div style="font-size:11px; color:#9ca3af; text-align:center; margin-top:20px;">업무 없음</div>`;
+                } else {
+                    matchingTasks.forEach(t => {
+                        let statusBadge = t.status === 'completed' ? '✅ 완료' : (t.status === 'in-progress' ? '🔄 진행중' : '⏳ 대기');
+                        let clickAction = t.isCar ? `window.location.href = 'index.html'` : `openTaskModal('${t.id}')`;
+
+                        tasksHtml += `
+                            <div class="weekly-task-item ${t.status}" onclick="${clickAction}" title="클릭하여 현황판 이동 또는 상세 보기">
+                                <span class="task-name-text">${escapeHtml(t.name)}</span>
+                                <span class="task-status-badge">${statusBadge}</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                dayBox.innerHTML = dayHeaderHtml + tasksHtml;
+                gridContainer.appendChild(dayBox);
+            }
+        }
+
+        function selectDateFromWeekly(dStr) {
+            selectedDateStr = dStr;
+            currentCalYear = parseInt(dStr.split('-')[0]);
+            currentCalMonth = parseInt(dStr.split('-')[1]) - 1;
+            if (!editingTaskId) {
+                document.getElementById('taskStartDate').value = selectedDateStr;
+                document.getElementById('taskEndDate').value = selectedDateStr;
+            }
+            renderCalendar();
+            renderWeeklySummary();
+        }
+
+        function openTaskModal(id) {
+            const task = manualTasks.find(t => t.id === id);
+            if (!task) return;
+
+            document.getElementById('modalTaskTitle').innerText = task.name;
+            let statusText = task.status === 'completed' ? '완료' : (task.status === 'in-progress' ? '진행 중' : '작업 전');
+
+            let badgesHtml = '<div class="worker-badges-container">';
+            if (task.workers) task.workers.forEach(w => badgesHtml += `<span class="worker-badge" style="${getWorkerColor(w)}">${escapeHtml(w)}</span>`);
+            badgesHtml += '</div>';
+
+            document.getElementById('modalTaskBody').innerHTML = `
+                <div class="card-detail-row"><span class="card-detail-label">상태</span><span class="card-detail-value"><strong>${statusText}</strong></span></div>
+                <div class="card-detail-row"><span class="card-detail-label">담당자</span><div class="card-detail-value">${badgesHtml}</div></div>
+                ${task.detail ? `<div class="card-detail-row"><span class="card-detail-label">세부사항</span><span class="card-detail-value">${escapeHtml(task.detail)}</span></div>` : ''}
+                <div class="card-detail-row"><span class="card-detail-label">기간</span><span class="card-detail-value">${task.startDate} ~ ${task.endDate}</span></div>
+            `;
+
+            let actionButtons = task.status === 'pending' ? `<button onclick="changeStatus('${task.id}', 1)">시작 ▶</button>` :
+                                (task.status === 'in-progress' ? `<button onclick="changeStatus('${task.id}', -1)">◀ 이전</button><button onclick="changeStatus('${task.id}', 1)">완료 ▶</button>` :
+                                `<button onclick="changeStatus('${task.id}', -1)">◀ 재작업</button>`);
+
+            document.getElementById('modalTaskFooter').innerHTML = `
+                <div style="display:flex; gap:6px;">${actionButtons}<button class="edit-btn" onclick="enterEditMode('${task.id}')">수정</button></div>
+                <button class="delete-btn" onclick="deleteTask('${task.id}')">삭제</button>
+            `;
+            document.getElementById('taskModal').style.display = 'flex';
+        }
+
+        function closeTaskModal() { document.getElementById('taskModal').style.display = 'none'; }
+        function openArchiveModal() { document.getElementById('archiveModal').style.display = 'flex'; }
+        function closeArchiveModal() { document.getElementById('archiveModal').style.display = 'none'; }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+
+        renderCalendar();
+        renderWeeklySummary();
+    </script>
+</body>
+</html>
