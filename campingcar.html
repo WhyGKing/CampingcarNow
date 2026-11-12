@@ -112,9 +112,24 @@
         <span class="status-badge" id="syncStatus">☁️ 실시간 연동됨</span>
     </h2>
 
-    <!-- 1. 신규 작업 지시 등록 영역 -->
+    <!-- 1. 차량별 통합 현황판 (순서 변경됨) -->
     <div class="section">
-        <h3>1. 신규 작업 지시 등록</h3>
+        <h3>1. 차량별 공정 현황판</h3>
+        
+        <!-- 필터 버튼 영역 -->
+        <div class="filter-bar">
+            <button onclick="filterCars('all', this)" class="filter-btn active">전체 보기</button>
+            <button onclick="filterCars('progress', this)" class="filter-btn">진행중</button>
+            <button onclick="filterCars('completed', this)" class="filter-btn">완료건</button>
+            <button onclick="filterCars('archived', this)" class="filter-btn">아카이브함</button>
+        </div>
+
+        <div id="carCardList"></div>
+    </div>
+
+    <!-- 2. 신규 작업 지시 등록 영역 (순서 변경됨) -->
+    <div class="section">
+        <h3>2. 신규 작업 지시 등록</h3>
         <div class="form-group">
             <label>차종:</label>
             <input type="text" id="carModel" list="carModelList" placeholder="예: 스타리아">
@@ -170,21 +185,6 @@
         </div>
 
         <button class="action-btn" onclick="addWorkOrder()">작업 지시 등록하기</button>
-    </div>
-
-    <!-- 2. 차량별 통합 현황판 -->
-    <div class="section">
-        <h3>2. 차량별 공정 현황판</h3>
-        
-        <!-- 필터 버튼 영역 -->
-        <div class="filter-bar">
-            <button onclick="filterCars('all', this)" class="filter-btn active">전체 보기</button>
-            <button onclick="filterCars('progress', this)" class="filter-btn">진행중</button>
-            <button onclick="filterCars('completed', this)" class="filter-btn">완료건</button>
-            <button onclick="filterCars('archived', this)" class="filter-btn">아카이브함</button>
-        </div>
-
-        <div id="carCardList"></div>
     </div>
 </div>
 
