@@ -50,7 +50,13 @@
         .cal-cell.today { border: 1px dashed var(--primary); }
         .dot-indicator { width: 5px; height: 5px; background-color: var(--primary); border-radius: 50%; margin-top: 2px; }
 
-        .form-container { background: #ffffff; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; }
+        .quick-action-panel { background: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 16px; }
+        .quick-action-panel h3 { font-size: 16px; color: var(--text-main); }
+        .quick-action-panel p { font-size: 13px; color: var(--text-sub); line-height: 1.5; }
+        .open-form-btn { background-color: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 4px rgba(37,99,235,0.2); }
+        .open-form-btn:hover { background-color: var(--primary-hover); }
+
+        .form-container { display: flex; flex-direction: column; gap: 10px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .form-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
         .form-container input, .form-container button { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; width: 100%; }
@@ -130,31 +136,11 @@
             <div class="cal-grid" id="cal-days-container" style="margin-top: 4px;"></div>
         </div>
 
-        <!-- 업무 등록 폼 영역 -->
-        <div class="form-container">
-            <h3 id="form-title" style="font-size: 14px; margin-bottom: 2px; color: var(--text-main);">➕ 새 업무 등록/수정</h3>
-            <div class="form-row">
-                <div><label>업무명 (필수)</label><input type="text" id="taskName" placeholder="예: 거실 수납장 제작"></div>
-                <div><label>세부사항 (선택)</label><input type="text" id="taskDetail" placeholder="예: 상부장 도어 경첩 부착"></div>
-            </div>
-            <div>
-                <label>담당자 (최대 3명)</label>
-                <div class="form-row-3">
-                    <input type="text" id="taskWorker1" placeholder="담당자 1 (필수)">
-                    <input type="text" id="taskWorker2" placeholder="담당자 2">
-                    <input type="text" id="taskWorker3" placeholder="담당자 3">
-                </div>
-            </div>
-            <div class="form-row">
-                <div><label>시작일</label><input type="date" id="taskStartDate" onchange="onStartDateChange()"></div>
-                <div><label>종료일 (기본: 시작일)</label><input type="date" id="taskEndDate"></div>
-            </div>
-            <div class="form-row" style="grid-template-columns: 1fr;">
-                <div><label>비고 / 특이사항 (선택)</label><input type="text" id="taskMemo" placeholder="특이사항 입력"></div>
-            </div>
-            <div class="form-actions" id="form-actions-container">
-                <button class="submit-btn" id="form-submit-btn" onclick="processTaskSubmit()">업무 추가/수정</button>
-            </div>
+        <!-- 우측 빠른 업무 등록 패널 -->
+        <div class="quick-action-panel">
+            <h3>📝 새 업무 관리</h3>
+            <p>버튼을 클릭하여 새로운 업무를 등록하거나<br>날짜별 일정을 간편하게 관리하세요.</p>
+            <button class="open-form-btn" onclick="openTaskFormModal()">➕ 새 업무 등록하기</button>
         </div>
     </div>
 
@@ -162,12 +148,46 @@
     <div class="weekly-section">
         <div class="weekly-title">
             <span>📊 주간 업무표 (업무 클릭 시 상세 보기 및 수정)</span>
-            <span style="font-size: 12px; font-weight: normal; color: var(--text-sub);">날짜를 누르면 해당 날짜로 이동합니다</span>
         </div>
         <div class="weekly-grid" id="weekly-grid-container"></div>
     </div>
 
     <!-- 모달 창들 -->
+    <!-- 1. 업무 등록/수정 팝업창 -->
+    <div class="modal" id="taskFormModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="form-title" style="font-size: 15px; color: var(--text-main);">➕ 새 업무 등록</h3>
+                <button class="close-btn" onclick="closeTaskFormModal()">✕</button>
+            </div>
+            <div class="form-container">
+                <div class="form-row">
+                    <div><label>업무명 (필수)</label><input type="text" id="taskName" placeholder="예: 거실 수납장 제작"></div>
+                    <div><label>세부사항 (선택)</label><input type="text" id="taskDetail" placeholder="예: 상부장 도어 경첩 부착"></div>
+                </div>
+                <div>
+                    <label>담당자 (최대 3명)</label>
+                    <div class="form-row-3">
+                        <input type="text" id="taskWorker1" placeholder="담당자 1 (필수)">
+                        <input type="text" id="taskWorker2" placeholder="담당자 2">
+                        <input type="text" id="taskWorker3" placeholder="담당자 3">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div><label>시작일</label><input type="date" id="taskStartDate" onchange="onStartDateChange()"></div>
+                    <div><label>종료일 (기본: 시작일)</label><input type="date" id="taskEndDate"></div>
+                </div>
+                <div class="form-row" style="grid-template-columns: 1fr;">
+                    <div><label>비고 / 특이사항 (선택)</label><input type="text" id="taskMemo" placeholder="특이사항 입력"></div>
+                </div>
+                <div class="form-actions" id="form-actions-container">
+                    <button class="submit-btn" id="form-submit-btn" onclick="processTaskSubmit()">업무 추가</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 업무 상세 보기 및 상태 변경 팝업창 -->
     <div class="modal" id="taskModal">
         <div class="modal-content">
             <div class="modal-header"><h3 id="modalTaskTitle">업무 카드</h3><button class="close-btn" onclick="closeTaskModal()">✕</button></div>
@@ -176,6 +196,7 @@
         </div>
     </div>
 
+    <!-- 3. 아카이브 팝업창 -->
     <div class="modal" id="archiveModal">
         <div class="modal-content">
             <div class="modal-header"><h3>📂 완료 작업 아카이브함</h3><button class="close-btn" onclick="closeArchiveModal()">✕</button></div>
@@ -198,7 +219,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const carsRef = db.ref('factory_cars');
-        const manualTasksRef = db.ref('schedule_manual_tasks'); // 🌟 수동 업무도 클라우드 저장소로 변경
+        const manualTasksRef = db.ref('schedule_manual_tasks');
 
         function formatDate(d) {
             const year = d.getFullYear();
@@ -230,7 +251,7 @@
         let currentCalMonth = new Date().getMonth();
         let editingTaskId = null;
 
-        // 🌟 Firebase 실시간 리스너 (차량 데이터 & 수동 업무 데이터를 동시에 실시간 수신)
+        // Firebase 실시간 리스너
         carsRef.on('value', (snapshot) => {
             const data = snapshot.val();
             factoryCars = data ? Object.values(data) : [];
@@ -246,7 +267,6 @@
         });
 
         function saveManualTasksToCloud() {
-            // 배열을 객체 형태로 변환하여 Firebase에 저장
             let tasksObj = {};
             manualTasks.forEach(t => {
                 tasksObj[t.id] = t;
@@ -304,6 +324,15 @@
             return [...manualTasks, ...carTasks];
         }
 
+        function openTaskFormModal() {
+            document.getElementById('taskFormModal').style.display = 'flex';
+        }
+
+        function closeTaskFormModal() {
+            document.getElementById('taskFormModal').style.display = 'none';
+            if (editingTaskId) cancelEditMode();
+        }
+
         function processTaskSubmit() {
             const name = document.getElementById('taskName').value.trim();
             const w1 = document.getElementById('taskWorker1').value.trim();
@@ -345,6 +374,7 @@
                 document.getElementById('taskEndDate').value = selectedDateStr;
             }
             saveManualTasksToCloud();
+            closeTaskFormModal();
         }
 
         function enterEditMode(id) {
@@ -362,7 +392,8 @@
             document.getElementById('taskEndDate').value = task.endDate;
             document.getElementById('taskMemo').value = task.memo || '';
 
-            document.getElementById('form-title').innerText = '✏️ 업무 정보 수정 중';
+            document.getElementById('form-title').innerText = '✏️ 업무 정보 수정';
+            document.getElementById('form-submit-btn').innerText = '수정 완료';
             document.getElementById('form-submit-btn').style.backgroundColor = 'var(--warning)';
 
             if (!document.getElementById('cancelEditBtn')) {
@@ -371,12 +402,13 @@
                 cancelBtn.innerText = '취소'; cancelBtn.onclick = cancelEditMode;
                 document.getElementById('form-actions-container').appendChild(cancelBtn);
             }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            openTaskFormModal();
         }
 
         function cancelEditMode() {
             editingTaskId = null;
-            document.getElementById('form-title').innerText = '➕ 새 업무 등록/수정';
+            document.getElementById('form-title').innerText = '➕ 새 업무 등록';
+            document.getElementById('form-submit-btn').innerText = '업무 추가';
             document.getElementById('form-submit-btn').style.backgroundColor = 'var(--primary)';
             const cancelBtn = document.getElementById('cancelEditBtn');
             if (cancelBtn) cancelBtn.remove();
