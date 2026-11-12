@@ -112,7 +112,7 @@
         <span class="status-badge" id="syncStatus">☁️ 실시간 연동됨</span>
     </h2>
 
-    <!-- 1. 차량별 통합 현황판 (순서 변경됨) -->
+    <!-- 1. 차량별 통합 현황판 -->
     <div class="section">
         <h3>1. 차량별 공정 현황판</h3>
         
@@ -127,7 +127,7 @@
         <div id="carCardList"></div>
     </div>
 
-    <!-- 2. 신규 작업 지시 등록 영역 (순서 변경됨) -->
+    <!-- 2. 신규 작업 지시 등록 영역 -->
     <div class="section">
         <h3>2. 신규 작업 지시 등록</h3>
         <div class="form-group">
@@ -141,8 +141,12 @@
             <datalist id="carNumberList"></datalist>
         </div>
         <div class="form-group">
-            <label>등록날짜:</label>
+            <label>지시일자:</label>
             <input type="date" id="createdAt">
+        </div>
+        <div class="form-group">
+            <label>최종 출고예정일:</label>
+            <input type="date" id="shipDueDate">
         </div>
         
         <label style="margin-top: 10px; font-weight:bold; color:#007bff;">🗂️ 가구별 세부 지시사항</label>
@@ -171,11 +175,6 @@
         <div id="registerProcessContainer"></div>
 
         <div class="form-group" style="margin-top: 12px;">
-            <label>최종 출고예정일:</label>
-            <input type="date" id="shipDueDate">
-        </div>
-
-        <div class="form-group">
             <label>📁 CNC 가공 파일 첨부 (직원 다운로드용):</label>
             <button type="button" onclick="document.getElementById('regFileHiddenInput').click()" style="width:100%; background:#17a2b8; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">
                 📂 내 파일 앱에서 CNC 파일 선택 (<span id="regFileCount">0개 선택됨</span>)
@@ -202,8 +201,12 @@
                 <input type="text" id="editCarNumberInput">
             </div>
             <div class="form-group">
-                <label>등록날짜:</label>
+                <label>지시일자:</label>
                 <input type="date" id="editCreatedAtInput">
+            </div>
+            <div class="form-group">
+                <label>최종 출고예정일:</label>
+                <input type="date" id="editCarShipDateInput">
             </div>
 
             <label style="margin-top: 12px; font-weight:bold; color:#2b8a3e;">🗂️ 가구별 세부 지시사항 수정</label>
@@ -232,11 +235,6 @@
             <div id="editProcessContainer"></div>
 
             <div class="form-group" style="margin-top: 12px;">
-                <label>최종 출고예정일:</label>
-                <input type="date" id="editCarShipDateInput">
-            </div>
-
-            <div class="form-group">
                 <label>📁 CNC 가공 파일 수정/추가:</label>
                 <button type="button" onclick="document.getElementById('editFileHiddenInput').click()" style="width:100%; background:#17a2b8; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">
                     📂 내 파일 앱에서 파일 추가 (<span id="editFileCount">0개 선택됨</span>)
@@ -345,7 +343,7 @@
         updateDatalists();
         initRegisterProcessInputs();
         
-        // 등록날짜 입력란 기본값을 오늘 날짜로 세팅
+        // 지시일자 입력란 기본값을 오늘 날짜로 세팅
         const todayStr = new Date().toISOString().split('T')[0];
         const createdAtEl = document.getElementById('createdAt');
         if (createdAtEl) createdAtEl.value = todayStr;
@@ -586,7 +584,7 @@
 
             card.innerHTML = `
                 <div class="car-header" onclick="toggleCard(${carIndex})">
-                    <span class="car-title">🚐 ${car.model} / ${car.number} <small style="color:#666; font-weight:normal;">(등록: ${car.createdAt || '-'} / 출고: ${car.shipDate || '미정'})</small></span>
+                    <span class="car-title">🚐 ${car.model} / ${car.number} <small style="color:#666; font-weight:normal;">(지시: ${car.createdAt || '-'} / 출고: ${car.shipDate || '미정'})</small></span>
                     <div style="display:flex; align-items:center; gap:8px;">
                         ${statusBadgeHtml}
                         <span class="toggle-icon" id="icon-${carIndex}">${isOpen ? '▲' : '▼'}</span>
@@ -597,7 +595,7 @@
                         <b style="color:#2b8a3e; font-size:12px;">🗂️ 가구별 세부 지시사항:</b>
                         <div style="margin-top:4px;">${memosHtml}</div>
                     </div>
-                    <div style="margin-bottom:4px;"><b>등록날짜:</b> <span style="color:#333; font-weight:bold;">${car.createdAt || '-'}</span></div>
+                    <div style="margin-bottom:4px;"><b>지시일자:</b> <span style="color:#333; font-weight:bold;">${car.createdAt || '-'}</span></div>
                     <div><b>최종 출고일:</b> <span style="color:#d9534f; font-weight:bold;">${car.shipDate || '-'}</span></div>
                     <div style="margin-top:4px;"><b>CNC 가공 파일:</b><br>${fileHtml}</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
@@ -740,6 +738,7 @@
         document.getElementById('editCarModelInput').value = car.model || '';
         document.getElementById('editCarNumberInput').value = car.number || '';
         document.getElementById('editCreatedAtInput').value = car.createdAt || '';
+        document.getElementById('editCarShipDateInput').value = car.shipDate || '';
         document.getElementById('editMemoWood').value = (car.memos && car.memos.wood) ? car.memos.wood : '';
         document.getElementById('editMemoBed').value = (car.memos && car.memos.bed) ? car.memos.bed : '';
         document.getElementById('editMemoSide').value = (car.memos && car.memos.side) ? car.memos.side : '';
@@ -765,7 +764,6 @@
             `;
         });
 
-        document.getElementById('editCarShipDateInput').value = car.shipDate || '';
         document.getElementById('editCarModal').style.display = 'flex';
     }
 
