@@ -61,9 +61,11 @@
         .form-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
         .form-container input, .form-container button { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; width: 100%; }
         .form-container label { font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 2px; display: block; }
-        .form-actions { display: flex; gap: 8px; margin-top: 4px; }
-        .submit-btn { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: 600; flex: 1; padding: 10px; border-radius: 4px; }
-        .cancel-btn { background-color: #6b7280; color: white; border: none; cursor: pointer; font-weight: 600; width: 100px; padding: 10px; border-radius: 4px; }
+        
+        /* 버튼 영역 플렉스 정렬 수정 (글자 깨짐 방지) */
+        .form-actions { display: flex; gap: 8px; margin-top: 4px; width: 100%; }
+        .submit-btn { background-color: var(--primary); color: white; border: none; cursor: pointer; font-weight: 600; flex: 1; padding: 10px; border-radius: 4px; white-space: nowrap; }
+        .cancel-btn { background-color: #6b7280; color: white; border: none; cursor: pointer; font-weight: 600; flex: 1; padding: 10px; border-radius: 4px; white-space: nowrap; }
 
         .weekly-section { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .weekly-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
