@@ -7,8 +7,11 @@
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 10px; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .header-right { display: flex; align-items: center; gap: 6px; }
         .status-badge { font-size: 11px; padding: 4px 8px; background: #28a745; color: white; border-radius: 4px; font-weight: bold; }
+        .nav-btn { font-size: 11px; padding: 4px 8px; background: #4b5563; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+        .nav-btn:hover { background: #374151; }
         
         .section { margin-bottom: 20px; padding: 12px; background: #f9f9f9; border-radius: 6px; border: 1px solid #ddd; }
         .section h3 { font-size: 15px; margin-top: 0; color: #007bff; }
@@ -109,7 +112,10 @@
 <div class="container">
     <h2>
         <span>🚐 캠핑카 통합 생산 현황판</span>
-        <span class="status-badge" id="syncStatus">☁️ 실시간 연동됨</span>
+        <div class="header-right">
+            <a href="index.html" class="nav-btn">📅 주간업무일정</a>
+            <span class="status-badge" id="syncStatus">☁️ 실시간 연동됨</span>
+        </div>
     </h2>
 
     <!-- 1. 차량별 통합 현황판 -->
@@ -688,7 +694,7 @@
 
         if (modelEl) modelEl.value = '';
         if (numberEl) numberEl.value = '';
-        if (createdAtEl) createdAtEl.value = new Date().toISOString().split('T')[0]; // 다시 오늘 날짜로 리셋
+        if (createdAtEl) createdAtEl.value = new Date().toISOString().split('T')[0];
         if (memoWoodEl) memoWoodEl.value = '';
         if (memoBedEl) memoBedEl.value = '';
         if (memoSideEl) memoSideEl.value = '';
