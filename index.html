@@ -109,6 +109,19 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    
+    <!-- 보안 비밀번호 체크 스크립트 -->
+    <script>
+        (function() {
+            const ADMIN_PASSWORD = "8080"; // 필요시 변경 가능
+            let pw = prompt("공장 전용 비밀번호를 입력하세요:");
+            if (pw !== ADMIN_PASSWORD) {
+                alert("비밀번호가 틀렸습니다. 접근이 거부됩니다.");
+                document.documentElement.innerHTML = "<h2 style='text-align:center; margin-top:100px; color:red; font-family:sans-serif;'>접근 권한이 없습니다. 페이지를 새로고침하여 다시 시도하세요.</h2>";
+                throw new Error("Unauthorized");
+            }
+        })();
+    </script>
 </head>
 <body>
 
@@ -604,8 +617,26 @@
             document.getElementById('taskModal').style.display = 'flex';
         }
 
+        function openArchiveModal() {
+            const container = document.getElementById('archive-list-container');
+            container.innerHTML = '';
+            
+            if (archives.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:#6b7280; padding:20px;">아카이브된 항목이 없습니다.</div>`;
+            } else {
+                archives.forEach((item, index) => {
+                    container.innerHTML += `
+                        <div class="archive-item">
+                            <strong>${escapeHtml(item.name)}</strong> (${item.date || '날짜 없음'})<br>
+                            <span style="color:#6b7280; font-size:12px;">담당: ${item.workers ? item.workers.join(', ') : '-'}</span>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('archiveModal').style.display = 'flex';
+        }
+
         function closeTaskModal() { document.getElementById('taskModal').style.display = 'none'; }
-        function openArchiveModal() { document.getElementById('archiveModal').style.display = 'flex'; }
         function closeArchiveModal() { document.getElementById('archiveModal').style.display = 'none'; }
 
         function escapeHtml(str) {
