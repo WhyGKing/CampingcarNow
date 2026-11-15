@@ -197,10 +197,12 @@
     <div class="main-layout">
         <!-- 달력 영역 -->
         <div class="calendar-container">
-            <div class="cal-header">
-                <button onclick="changeMonth(-1)">&lt;</button>
-                <span id="cal-month-title">2026년 3월</span>
-                <button onclick="changeMonth(1)">&gt;</button>
+            <div class="cal-header" style="gap: 4px; font-size: 14px;">
+                <button onclick="changeYear(-1)" title="작년 같은 달" style="padding: 4px 6px; font-size: 11px; font-weight: bold; background: #f3f4f6;">&lt;&lt;</button>
+                <button onclick="changeMonth(-1)" title="이전 달" style="padding: 4px 8px;">&lt;</button>
+                <span id="cal-month-title" style="flex-grow: 1; text-align: center; cursor: pointer; padding: 4px; border-radius: 4px; background: #f9fafb; border: 1px solid #e5e7eb;" title="클릭하여 연도/월 선택" onclick="openYearMonthPicker()">2026년 3월</span>
+                <button onclick="changeMonth(1)" title="다음 달" style="padding: 4px 8px;">&gt;</button>
+                <button onclick="changeYear(1)" title="내년 같은 달" style="padding: 4px 6px; font-size: 11px; font-weight: bold; background: #f3f4f6;">&gt;&gt;</button>
             </div>
             <div class="cal-grid">
                 <div class="cal-day-name">일</div>
@@ -279,6 +281,27 @@
         <div class="modal-content">
             <div class="modal-header"><h3>📂 완료 작업 아카이브함</h3><button class="close-btn" onclick="closeArchiveModal()">✕</button></div>
             <div id="archive-list-container"></div>
+        </div>
+    </div>
+
+    <!-- 4. 연도/월 간편 선택 모달창 -->
+    <div class="modal" id="yearMonthModal">
+        <div class="modal-content" style="max-width: 320px; text-align: center;">
+            <div class="modal-header">
+                <h3 style="font-size: 15px;">📅 연도 및 월 선택</h3>
+                <button class="close-btn" onclick="closeYearMonthModal()">✕</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px; padding: 10px 0;">
+                <div>
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 4px; display: block;">연도 선택</label>
+                    <select id="pickerYearSelect" style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--border-color); border-radius: 6px; background: #f9fafb; font-weight: bold;"></select>
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 4px; display: block;">월 선택</label>
+                    <select id="pickerMonthSelect" style="width: 100%; padding: 10px; font-size: 15px; border: 1px solid var(--border-color); border-radius: 6px; background: #f9fafb; font-weight: bold;"></select>
+                </div>
+                <button onclick="applyYearMonthPicker()" style="background: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; margin-top: 6px;">이동하기</button>
+            </div>
         </div>
     </div>
 
@@ -587,6 +610,51 @@
             renderCalendar();
         }
 
+        function changeYear(dir) {
+            currentCalYear += dir;
+            renderCalendar();
+        }
+
+        function openYearMonthPicker() {
+            const yearSelect = document.getElementById('pickerYearSelect');
+            yearSelect.innerHTML = '';
+            for (let y = 2000; y <= 2050; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.innerText = `${y}년`;
+                if (y === currentCalYear) opt.selected = true;
+                yearSelect.appendChild(opt);
+            }
+
+            const monthSelect = document.getElementById('pickerMonthSelect');
+            monthSelect.innerHTML = '';
+            for (let m = 1; m <= 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.innerText = `${m}월`;
+                if (m === (currentCalMonth + 1)) opt.selected = true;
+                monthSelect.appendChild(opt);
+            }
+
+            document.getElementById('yearMonthModal').style.display = 'flex';
+        }
+
+        function closeYearMonthModal() {
+            document.getElementById('yearMonthModal').style.display = 'none';
+        }
+
+        function applyYearMonthPicker() {
+            const yearSelect = document.getElementById('pickerYearSelect');
+            const monthSelect = document.getElementById('pickerMonthSelect');
+            
+            currentCalYear = parseInt(yearSelect.value);
+            currentCalMonth = parseInt(monthSelect.value) - 1;
+            
+            closeYearMonthModal();
+            renderCalendar();
+            renderWeeklySummary();
+        }
+
         function renderWeeklySummary() {
             const gridContainer = document.getElementById('weekly-grid-container');
             gridContainer.innerHTML = '';
@@ -660,6 +728,7 @@
             }
             renderCalendar();
             renderWeeklySummary();
+            openTaskFormModal();
         }
 
         function openTaskModal(id) {
