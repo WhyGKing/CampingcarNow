@@ -156,7 +156,7 @@
 
     <script>
         function checkPassword() {
-            const ADMIN_PASSWORD = "8080";
+            const ADMIN_PASSWORD = "1234";
             const inputVal = document.getElementById('pwInput').value;
             const errorMsg = document.getElementById('pwErrorMsg');
 
@@ -200,9 +200,10 @@
             <div class="cal-header" style="gap: 4px; font-size: 14px;">
                 <button onclick="changeYear(-1)" title="작년 같은 달" style="padding: 4px 6px; font-size: 11px; font-weight: bold; background: #f3f4f6;">&lt;&lt;</button>
                 <button onclick="changeMonth(-1)" title="이전 달" style="padding: 4px 8px;">&lt;</button>
-                <span id="cal-month-title" style="flex-grow: 1; text-align: center; cursor: pointer; padding: 4px; border-radius: 4px; background: #f9fafb; border: 1px solid #e5e7eb;" title="클릭하여 연도/월 선택" onclick="openYearMonthPicker()">2026년 3월</span>
+                <span id="cal-month-title" style="flex-grow: 1; text-align: center; cursor: pointer;" title="클릭하여 연도/월 직접 선택" onclick="openYearMonthPicker()">2026년 3월</span>
                 <button onclick="changeMonth(1)" title="다음 달" style="padding: 4px 8px;">&gt;</button>
                 <button onclick="changeYear(1)" title="내년 같은 달" style="padding: 4px 6px; font-size: 11px; font-weight: bold; background: #f3f4f6;">&gt;&gt;</button>
+                <button onclick="goToCurrentMonth()" title="당월(이번 달)로 이동" style="padding: 4px 8px; font-size: 11px; font-weight: bold; background: #eff6ff; color: var(--primary); border-color: #93c5fd;">당월</button>
             </div>
             <div class="cal-grid">
                 <div class="cal-day-name">일</div>
@@ -651,6 +652,19 @@
             currentCalMonth = parseInt(monthSelect.value) - 1;
             
             closeYearMonthModal();
+            renderCalendar();
+            renderWeeklySummary();
+        }
+
+        function goToCurrentMonth() {
+            const now = new Date();
+            currentCalYear = now.getFullYear();
+            currentCalMonth = now.getMonth();
+            selectedDateStr = formatDate(now);
+            if (!editingTaskId) {
+                document.getElementById('taskStartDate').value = selectedDateStr;
+                document.getElementById('taskEndDate').value = selectedDateStr;
+            }
             renderCalendar();
             renderWeeklySummary();
         }
