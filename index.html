@@ -74,10 +74,9 @@
         .weekly-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
         @media (max-width: 900px) { .weekly-grid { grid-template-columns: 1fr; } }
 
-        .weekly-day-box { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; min-height: 180px; cursor: pointer; transition: background 0.15s; }
-        .weekly-day-box:hover { background: #f1f5f9; }
+        .weekly-day-box { background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; min-height: 180px; }
         .weekly-day-box.today-box { border-color: var(--primary); background: #f0f7ff; }
-        .weekly-day-header { font-size: 12px; font-weight: bold; color: var(--text-main); margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+        .weekly-day-header { font-size: 12px; font-weight: bold; color: var(--text-main); margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; cursor: pointer; }
         .weekly-day-header:hover { color: var(--primary); }
 
         .weekly-task-item {
@@ -718,7 +717,7 @@
             
             let html = `
                 <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-                    <button onclick="downloadArchiveJSON()" style="flex:1; background:#2563eb; color:white; border:none; padding:8px 10px; border-radius:4px; font-weight:600; font-size:12px; cursor:pointer;">📥 아카이브 다운로드 (JSON)</button>
+                    <button onclick="downloadArchiveCSV()" style="flex:1; background:#2563eb; color:white; border:none; padding:8px 10px; border-radius:4px; font-weight:600; font-size:12px; cursor:pointer;">📥 아카이브 다운로드 (Excel/CSV)</button>
                     <button onclick="clearAllArchives()" style="flex:1; background:#ef4444; color:white; border:none; padding:8px 10px; border-radius:4px; font-weight:600; font-size:12px; cursor:pointer;">🗑️ 전체 삭제 (용량 비우기)</button>
                 </div>
                 <div id="archive-items-scroll" style="max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
@@ -744,15 +743,27 @@
             document.getElementById('archiveModal').style.display = 'flex';
         }
 
-        function downloadArchiveJSON() {
+        function downloadArchiveCSV() {
             if (archives.length === 0) {
                 alert("다운로드할 아카이브 데이터가 없습니다.");
                 return;
             }
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(archives, null, 2));
+
+            let csvContent = "\uFEFF업무명,완료일(날짜),담당자,세부사항\n";
+
+            archives.forEach(item => {
+                const name = `"${(item.name || '').replace(/"/g, '""')}"`;
+                const date = `"${(item.date || '').replace(/"/g, '""')}"`;
+                const workers = `"${(item.workers ? item.workers.join(', ') : '').replace(/"/g, '""')}"`;
+                const detail = `"${(item.detail || '').replace(/"/g, '""')}"`;
+                csvContent += `${name},${date},${workers},${detail}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `archive_backup_${new Date().toISOString().split('T')[0]}.json`);
+            downloadAnchor.setAttribute("href", url);
+            downloadAnchor.setAttribute("download", `아카이브_백업_${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
