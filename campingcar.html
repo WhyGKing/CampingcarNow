@@ -109,10 +109,16 @@
     <h2>
         <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             🚐 캠핑카 생산 현황판
-            <select class="page-select" onchange="if(this.value) location.href=this.value;" style="padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; font-weight: bold; background: #f9fafb; cursor: pointer;">
-                <option value="index.html">📅 주간업무일정</option>
-                <option value="campingcar.html" selected>🚐 캠핑카 제작현황판</option>
-            </select>
+            <!-- 네이티브 select 대신 캡처 사진처럼 깔끔하고 안전한 커스텀 드롭다운 버튼 적용 -->
+            <div style="position: relative; display: inline-block;">
+                <button type="button" onclick="toggleCampingPageMenu(event)" style="padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; font-weight: bold; background: #f9fafb; cursor: pointer; display: flex; align-items: center; gap: 4px; color: #333;">
+                    🚐 캠핑카 제작현황판 ▼
+                </button>
+                <div id="campingPageDropdownMenu" style="display: none; position: absolute; left: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1500; min-width: 150px; text-align: left;">
+                    <div onclick="location.href='index.html'" style="padding: 8px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #eee; font-weight: bold;">📅 주간업무일정</div>
+                    <div onclick="location.href='campingcar.html'" style="padding: 8px 12px; font-size: 13px; cursor: pointer; font-weight: bold; color: #007bff;">🚐 캠핑카 제작현황판</div>
+                </div>
+            </div>
             <button class="archive-btn-header" onclick="openArchiveModal()">📂 아카이브함</button>
         </span>
     </h2>
@@ -1049,7 +1055,6 @@
         document.getElementById('zoomOverlay').style.display = 'none';
     }
 
-    // 아카이브함 관련 기능 함수들 (세부 지시사항 및 첨부파일 정보 포함)
     function openArchiveModal() {
         const container = document.getElementById('car-archive-list-container');
         let html = `
@@ -1159,6 +1164,22 @@
             icon.innerText = '▼';
         }
     }
+
+    // 캠핑카 페이지 커스텀 드롭다운 메뉴 토글 및 외부 클릭 시 닫기
+    function toggleCampingPageMenu(e) {
+        e.stopPropagation();
+        const menu = document.getElementById('campingPageDropdownMenu');
+        if (menu) {
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+    }
+
+    window.addEventListener('click', function() {
+        const menu = document.getElementById('campingPageDropdownMenu');
+        if (menu) {
+            menu.style.display = 'none';
+        }
+    });
 </script>
 
 </body>
