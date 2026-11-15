@@ -7,11 +7,7 @@
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; padding: 10px; }
         .container { max-width: 600px; margin: 0 auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .header-right { display: flex; align-items: center; gap: 6px; }
-        .status-badge { font-size: 11px; padding: 4px 8px; background: #28a745; color: white; border-radius: 4px; font-weight: bold; }
-        .nav-btn { font-size: 11px; padding: 4px 8px; background: #4b5563; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
-        .nav-btn:hover { background: #374151; }
+        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
         
         .section { margin-bottom: 20px; padding: 12px; background: #f9f9f9; border-radius: 6px; border: 1px solid #ddd; }
         .section h3 { font-size: 15px; margin-top: 0; color: #007bff; }
@@ -19,7 +15,8 @@
         label { display: block; font-weight: bold; font-size: 12px; margin-bottom: 3px; color: #555; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
         
-        /* 필터 바 및 버튼 스타일 */
+        .archive-btn-header { background-color: #4b5563; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; margin-left: 6px; }
+
         .filter-bar { display: flex; gap: 6px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 4px; }
         .filter-btn { padding: 6px 12px; border: 1px solid #ccc; background: #f8f9fa; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap; }
         .filter-btn.active { background: #007bff; color: white; border-color: #007bff; }
@@ -35,7 +32,6 @@
         button.action-btn { width: 100%; background: #007bff; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 15px; margin-top: 10px; }
         button.action-btn:hover { background: #0056b3; }
         
-        /* 차량 카드 스타일 (진행중 / 완료 시각적 구분) */
         .car-card { background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; transition: all 0.2s; }
         .car-card.in-progress { border-left: 6px solid #2196F3; }
         .car-card.completed { border-left: 6px solid #4CAF50; background-color: #fafafa; }
@@ -111,18 +107,19 @@
 
 <div class="container">
     <h2>
-        <span>🚐 캠핑카 통합 생산 현황판</span>
-        <div class="header-right">
-            <a href="index.html" class="nav-btn">📅 주간업무일정</a>
-            <span class="status-badge" id="syncStatus">☁️ 실시간 연동됨</span>
-        </div>
+        <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            🚐 캠핑카 생산 현황판
+            <select class="page-select" onchange="if(this.value) location.href=this.value;" style="padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; font-weight: bold; background: #f9fafb; cursor: pointer;">
+                <option value="index.html">📅 주간업무일정</option>
+                <option value="campingcar.html" selected>🚐 캠핑카 제작현황판</option>
+            </select>
+            <button class="archive-btn-header" onclick="openArchiveModal()">📂 아카이브함</button>
+        </span>
     </h2>
 
-    <!-- 1. 차량별 통합 현황판 -->
     <div class="section">
         <h3>1. 차량별 공정 현황판</h3>
         
-        <!-- 필터 버튼 영역 -->
         <div class="filter-bar">
             <button onclick="filterCars('all', this)" class="filter-btn active">전체 보기</button>
             <button onclick="filterCars('progress', this)" class="filter-btn">진행중</button>
@@ -133,63 +130,69 @@
         <div id="carCardList"></div>
     </div>
 
-    <!-- 2. 신규 작업 지시 등록 영역 -->
+    <!-- 2. 신규 작업 지시 등록 (접힘/펼침 토글 적용) -->
     <div class="section">
-        <h3>2. 신규 작업 지시 등록</h3>
-        <div class="form-group">
-            <label>차종:</label>
-            <input type="text" id="carModel" list="carModelList" placeholder="예: 스타리아">
-            <datalist id="carModelList"></datalist>
-        </div>
-        <div class="form-group">
-            <label>차량번호:</label>
-            <input type="text" id="carNumber" list="carNumberList" placeholder="예: 1234호">
-            <datalist id="carNumberList"></datalist>
-        </div>
-        <div class="form-group">
-            <label>지시일자:</label>
-            <input type="date" id="createdAt">
-        </div>
-        <div class="form-group">
-            <label>최종 출고예정일:</label>
-            <input type="date" id="shipDueDate">
-        </div>
-        
-        <label style="margin-top: 10px; font-weight:bold; color:#007bff;">🗂️ 가구별 세부 지시사항</label>
-        <div class="furniture-input-box">
-            <label>🪵 목재종류:</label>
-            <input type="text" id="memoWood" placeholder="예: 자작나무 합판 15mm, 포퓰러 등">
-        </div>
-        <div class="furniture-input-box">
-            <label>🛏️ 침상 지시사항:</label>
-            <input type="text" id="memoBed" placeholder="예: 침상 하단 서랍 추가 등">
-        </div>
-        <div class="furniture-input-box">
-            <label>📦 사이드수납장 지시사항:</label>
-            <input type="text" id="memoSide" placeholder="예: 우측 깊이 5cm 축소 등">
-        </div>
-        <div class="furniture-input-box">
-            <label>🚰 싱크장 지시사항:</label>
-            <input type="text" id="memoSink" placeholder="예: 수전 위치 변경 등">
-        </div>
-        <div class="furniture-input-box">
-            <label>🏷️ 기타 가구 지시사항:</label>
-            <input type="text" id="memoEtc" placeholder="예: 천장 테이블 별도 제작 등">
-        </div>
+        <h3 onclick="toggleRegisterForm()" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin: 0; user-select: none;">
+            <span>➕ 신규 작업 지시 등록</span>
+            <span id="regToggleIcon" style="font-size: 14px; color: #555;">▼</span>
+        </h3>
+        <div id="registerFormBody" style="display: none; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 12px;">
+            <div class="form-group">
+                <label>차종:</label>
+                <input type="text" id="carModel" list="carModelList" placeholder="예: 스타리아">
+                <datalist id="carModelList"></datalist>
+            </div>
+            <div class="form-group">
+                <label>차량번호:</label>
+                <input type="text" id="carNumber" list="carNumberList" placeholder="예: 1234호">
+                <datalist id="carNumberList"></datalist>
+            </div>
+            <div class="form-group">
+                <label>등록날짜:</label>
+                <input type="date" id="createdAt">
+            </div>
+            
+            <label style="margin-top: 10px; font-weight:bold; color:#007bff;">🗂️ 가구별 세부 지시사항</label>
+            <div class="furniture-input-box">
+                <label>🪵 목재종류:</label>
+                <input type="text" id="memoWood" placeholder="예: 자작나무 합판 15mm, 포퓰러 등">
+            </div>
+            <div class="furniture-input-box">
+                <label>🛏️ 침상 지시사항:</label>
+                <input type="text" id="memoBed" placeholder="예: 침상 하단 서랍 추가 등">
+            </div>
+            <div class="furniture-input-box">
+                <label>📦 사이드수납장 지시사항:</label>
+                <input type="text" id="memoSide" placeholder="예: 우측 깊이 5cm 축소 등">
+            </div>
+            <div class="furniture-input-box">
+                <label>🚰 싱크장 지시사항:</label>
+                <input type="text" id="memoSink" placeholder="예: 수전 위치 변경 등">
+            </div>
+            <div class="furniture-input-box">
+                <label>🏷️ 기타 가구 지시사항:</label>
+                <input type="text" id="memoEtc" placeholder="예: 천장 테이블 별도 제작 등">
+            </div>
 
-        <label style="margin-top: 15px; font-weight:bold; color:#007bff;">📋 7단계 공정별 담당자, 기한 및 세부사항 지정</label>
-        <div id="registerProcessContainer"></div>
+            <label style="margin-top: 15px; font-weight:bold; color:#007bff;">📋 8단계 공정별 담당자, 기한 및 세부사항 지정</label>
+            <div id="registerProcessContainer"></div>
 
-        <div class="form-group" style="margin-top: 12px;">
-            <label>📁 CNC 가공 파일 첨부 (직원 다운로드용):</label>
-            <button type="button" onclick="document.getElementById('regFileHiddenInput').click()" style="width:100%; background:#17a2b8; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">
-                📂 내 파일 앱에서 CNC 파일 선택 (<span id="regFileCount">0개 선택됨</span>)
-            </button>
-            <input type="file" id="regFileHiddenInput" multiple style="display:none;" onchange="handleFileChange(this, 'reg')">
-            <div id="regFileTagBox" class="file-tag-box"></div>
+            <div class="form-group" style="margin-top: 12px;">
+                <label>최종 출고예정일:</label>
+                <input type="date" id="shipDueDate">
+            </div>
+
+            <div class="form-group">
+                <label>📁 CNC 가공 파일 첨부 (직원 다운로드용):</label>
+                <button type="button" onclick="document.getElementById('regFileHiddenInput').click()" style="width:100%; background:#17a2b8; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">
+                    📂 내 파일 앱에서 CNC 파일 선택 (<span id="regFileCount">0개 선택됨</span>)
+                </button>
+                <input type="file" id="regFileHiddenInput" multiple style="display:none;" onchange="handleFileChange(this, 'reg')">
+                <div id="regFileTagBox" class="file-tag-box"></div>
+            </div>
+
+            <button class="action-btn" onclick="addWorkOrder()">작업 지시 등록하기</button>
         </div>
-
-        <button class="action-btn" onclick="addWorkOrder()">작업 지시 등록하기</button>
     </div>
 </div>
 
@@ -207,12 +210,8 @@
                 <input type="text" id="editCarNumberInput">
             </div>
             <div class="form-group">
-                <label>지시일자:</label>
+                <label>등록날짜:</label>
                 <input type="date" id="editCreatedAtInput">
-            </div>
-            <div class="form-group">
-                <label>최종 출고예정일:</label>
-                <input type="date" id="editCarShipDateInput">
             </div>
 
             <label style="margin-top: 12px; font-weight:bold; color:#2b8a3e;">🗂️ 가구별 세부 지시사항 수정</label>
@@ -237,10 +236,15 @@
                 <input type="text" id="editMemoEtc">
             </div>
 
-            <label style="margin-top: 15px; font-weight:bold; color:#007bff;">📋 7단계 공정별 담당자, 기한 및 세부사항 수정</label>
+            <label style="margin-top: 15px; font-weight:bold; color:#007bff;">📋 8단계 공정별 담당자, 기한 및 세부사항 수정</label>
             <div id="editProcessContainer"></div>
 
             <div class="form-group" style="margin-top: 12px;">
+                <label>최종 출고예정일:</label>
+                <input type="date" id="editCarShipDateInput">
+            </div>
+
+            <div class="form-group">
                 <label>📁 CNC 가공 파일 수정/추가:</label>
                 <button type="button" onclick="document.getElementById('editFileHiddenInput').click()" style="width:100%; background:#17a2b8; color:white; border:none; padding:10px; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer;">
                     📂 내 파일 앱에서 파일 추가 (<span id="editFileCount">0개 선택됨</span>)
@@ -305,6 +309,18 @@
     <img id="zoomImg" class="zoom-img">
 </div>
 
+<!-- 캠핑카 아카이브 팝업창 -->
+<div class="modal-overlay" id="carArchiveModal" onclick="preventBgClose(event)">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>📂 캠핑카 아카이브함</span>
+            <button class="close-btn" onclick="closeCarArchiveModal()" style="background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
+        </div>
+        <div id="car-archive-list-container"></div>
+        <button class="modal-close-btn" onclick="closeCarArchiveModal()">닫기</button>
+    </div>
+</div>
+
 <script>
     const firebaseConfig = {
         apiKey: "AIzaSyAf-9eF-Qf-aIffLGGZbQ76Hs_uzlSBcT0",
@@ -328,7 +344,8 @@
         "4. 부속자재 샌딩",
         "5. 마감 도색",
         "6. 가구조립",
-        "7. 가구시공"
+        "7. 가구시공",
+        "8. 출고"
     ];
 
     let recentValues = {
@@ -349,7 +366,6 @@
         updateDatalists();
         initRegisterProcessInputs();
         
-        // 지시일자 입력란 기본값을 오늘 날짜로 세팅
         const todayStr = new Date().toISOString().split('T')[0];
         const createdAtEl = document.getElementById('createdAt');
         if (createdAtEl) createdAtEl.value = todayStr;
@@ -372,6 +388,7 @@
         if (confirm('이 완료된 차량을 아카이브(보관) 처리하시겠습니까?\n메인 현황판에서 숨겨집니다.')) {
             savedCars[carIndex].isArchived = true;
             saveOrdersToCloud();
+            renderCards();
         }
     }
 
@@ -379,6 +396,7 @@
         if (confirm('이 차량을 아카이브함에서 다시 메인 현황판으로 복원하시겠습니까?')) {
             savedCars[carIndex].isArchived = false;
             saveOrdersToCloud();
+            renderCards();
         }
     }
 
@@ -590,7 +608,7 @@
 
             card.innerHTML = `
                 <div class="car-header" onclick="toggleCard(${carIndex})">
-                    <span class="car-title">🚐 ${car.model} / ${car.number} <small style="color:#666; font-weight:normal;">(지시: ${car.createdAt || '-'} / 출고: ${car.shipDate || '미정'})</small></span>
+                    <span class="car-title">🚐 ${car.model} / ${car.number} <small style="color:#666; font-weight:normal;">(등록: ${car.createdAt || '-'} / 출고: ${car.shipDate || '미정'})</small></span>
                     <div style="display:flex; align-items:center; gap:8px;">
                         ${statusBadgeHtml}
                         <span class="toggle-icon" id="icon-${carIndex}">${isOpen ? '▲' : '▼'}</span>
@@ -601,11 +619,11 @@
                         <b style="color:#2b8a3e; font-size:12px;">🗂️ 가구별 세부 지시사항:</b>
                         <div style="margin-top:4px;">${memosHtml}</div>
                     </div>
-                    <div style="margin-bottom:4px;"><b>지시일자:</b> <span style="color:#333; font-weight:bold;">${car.createdAt || '-'}</span></div>
+                    <div style="margin-bottom:4px;"><b>등록날짜:</b> <span style="color:#333; font-weight:bold;">${car.createdAt || '-'}</span></div>
                     <div><b>최종 출고일:</b> <span style="color:#d9534f; font-weight:bold;">${car.shipDate || '-'}</span></div>
                     <div style="margin-top:4px;"><b>CNC 가공 파일:</b><br>${fileHtml}</div>
                     <hr style="border:0; border-top:1px solid #eee; margin:8px 0;">
-                    <div style="font-weight:bold; margin-bottom:5px; color:#007bff;">📋 공정별 담당자, 기한 및 세부사항 관리</div>
+                    <div style="font-weight:bold; margin-bottom:5px; color:#007bff;">📋 8단계 공정별 관리</div>
                     ${processHtml}
                     
                     ${issueHtml ? `
@@ -703,6 +721,7 @@
         if (shipDateEl) shipDateEl.value = '';
         
         initRegisterProcessInputs();
+        toggleRegisterForm();
         alert(`[${model} / ${number}] 차량 작업 지시가 클라우드에 등록되었습니다!`);
     }
 
@@ -744,7 +763,6 @@
         document.getElementById('editCarModelInput').value = car.model || '';
         document.getElementById('editCarNumberInput').value = car.number || '';
         document.getElementById('editCreatedAtInput').value = car.createdAt || '';
-        document.getElementById('editCarShipDateInput').value = car.shipDate || '';
         document.getElementById('editMemoWood').value = (car.memos && car.memos.wood) ? car.memos.wood : '';
         document.getElementById('editMemoBed').value = (car.memos && car.memos.bed) ? car.memos.bed : '';
         document.getElementById('editMemoSide').value = (car.memos && car.memos.side) ? car.memos.side : '';
@@ -770,6 +788,7 @@
             `;
         });
 
+        document.getElementById('editCarShipDateInput').value = car.shipDate || '';
         document.getElementById('editCarModal').style.display = 'flex';
     }
 
@@ -1028,6 +1047,117 @@
 
     function closeZoom() {
         document.getElementById('zoomOverlay').style.display = 'none';
+    }
+
+    // 아카이브함 관련 기능 함수들 (세부 지시사항 및 첨부파일 정보 포함)
+    function openArchiveModal() {
+        const container = document.getElementById('car-archive-list-container');
+        let html = `
+            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                <button onclick="downloadCarArchiveCSV()" style="flex:1; background:#2563eb; color:white; border:none; padding:8px 10px; border-radius:4px; font-weight:600; font-size:12px; cursor:pointer;">📥 아카이브 다운로드 (세부내용/파일포함 CSV)</button>
+                <button onclick="clearAllCarArchives()" style="flex:1; background:#ef4444; color:white; border:none; padding:8px 10px; border-radius:4px; font-weight:600; font-size:12px; cursor:pointer;">🗑️ 전체 삭제</button>
+            </div>
+            <div style="max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+        `;
+
+        const archivedCars = savedCars.filter(car => car.isArchived === true);
+        if (archivedCars.length === 0) {
+            html += `<div style="text-align:center; color:#6b7280; padding:20px;">아카이브된 차량이 없습니다.</div>`;
+        } else {
+            savedCars.forEach((car, index) => {
+                if (!car.isArchived) return;
+                html += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f9fafb; padding:10px; border-radius:6px; border:1px solid #d1d5db; font-size:13px;">
+                        <div>
+                            <strong>${escapeHtml(car.model)} (${escapeHtml(car.number)})</strong><br>
+                            <span style="color:#6b7280; font-size:12px;">출고일: ${car.shipDate || '미정'}</span>
+                        </div>
+                        <button onclick="deleteSingleCarArchive(${index})" style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:600;">삭제</button>
+                    </div>
+                `;
+            });
+        }
+        html += `</div>`;
+        container.innerHTML = html;
+        document.getElementById('carArchiveModal').style.display = 'flex';
+    }
+
+    function closeCarArchiveModal() {
+        document.getElementById('carArchiveModal').style.display = 'none';
+    }
+
+    function deleteSingleCarArchive(index) {
+        if (confirm("이 아카이브 항목을 완전히 삭제하시겠습니까?")) {
+            savedCars.splice(index, 1);
+            saveOrdersToCloud();
+            openArchiveModal();
+            renderCards();
+        }
+    }
+
+    function clearAllCarArchives() {
+        if (confirm("정말 모든 아카이브 차량 데이터를 삭제하시겠습니까?")) {
+            savedCars = savedCars.filter(car => !car.isArchived);
+            saveOrdersToCloud();
+            openArchiveModal();
+            renderCards();
+        }
+    }
+
+    function downloadCarArchiveCSV() {
+        const archivedCars = savedCars.filter(car => car.isArchived === true);
+        if (archivedCars.length === 0) {
+            alert("다운로드할 아카이브 데이터가 없습니다.");
+            return;
+        }
+
+        let csvContent = "\uFEFF차량모델,차량번호,등록일,출고일,목재종류,침상지시사항,사이드수납장지시사항,싱크장지시사항,기타가구지시사항,첨부파일목록,상태\n";
+        
+        archivedCars.forEach(car => {
+            const model = `"${(car.model || '').replace(/"/g, '""')}"`;
+            const number = `"${(car.number || '').replace(/"/g, '""')}"`;
+            const createdAt = `"${(car.createdAt || '').replace(/"/g, '""')}"`;
+            const shipDate = `"${(car.shipDate || '').replace(/"/g, '""')}"`;
+            
+            const wood = `"${(car.memos && car.memos.wood ? car.memos.wood : '').replace(/"/g, '""')}"`;
+            const bed = `"${(car.memos && car.memos.bed ? car.memos.bed : '').replace(/"/g, '""')}"`;
+            const side = `"${(car.memos && car.memos.side ? car.memos.side : '').replace(/"/g, '""')}"`;
+            const sink = `"${(car.memos && car.memos.sink ? car.memos.sink : '').replace(/"/g, '""')}"`;
+            const etc = `"${(car.memos && car.memos.etc ? car.memos.etc : '').replace(/"/g, '""')}"`;
+
+            let fileNames = '';
+            if (car.files && car.files.length > 0) {
+                fileNames = car.files.map(f => f.name).join(' / ');
+            }
+            const filesCol = `"${fileNames.replace(/"/g, '""')}"`;
+
+            csvContent += `${model},${number},${createdAt},${shipDate},${wood},${bed},${side},${sink},${etc},${filesCol},아카이브완료\n`;
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", url);
+        downloadAnchor.setAttribute("download", `캠핑카_아카이브_상세내역_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    function toggleRegisterForm() {
+        const body = document.getElementById('registerFormBody');
+        const icon = document.getElementById('regToggleIcon');
+        if (body.style.display === 'none' || body.style.display === '') {
+            body.style.display = 'block';
+            icon.innerText = '▲';
+        } else {
+            body.style.display = 'none';
+            icon.innerText = '▼';
+        }
     }
 </script>
 
