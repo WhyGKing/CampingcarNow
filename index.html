@@ -37,6 +37,7 @@
         .cal-cell.other-month { color: #d1d5db; }
         .cal-cell.selected { background: #eff6ff; border-color: var(--primary); font-weight: bold; }
         .cal-cell.today { border: 1px dashed var(--primary); }
+        .cal-cell.holiday { color: #ef4444; font-weight: bold; } /* 토요일, 일요일 및 공휴일 빨간 글씨 */
         .dot-indicator { width: 5px; height: 5px; background-color: var(--primary); border-radius: 50%; margin-top: 2px; }
         .quick-action-panel { background: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 16px; }
         .quick-action-panel h3 { font-size: 16px; color: var(--text-main); }
@@ -172,7 +173,13 @@
                 <button onclick="goToCurrentMonth()" title="당월(이번 달)로 이동" style="padding: 4px 8px; font-size: 11px; font-weight: bold; background: #eff6ff; color: var(--primary); border-color: #93c5fd;">당월</button>
             </div>
             <div class="cal-grid">
-                <div class="cal-day-name">일</div><div class="cal-day-name">월</div><div class="cal-day-name">화</div><div class="cal-day-name">수</div><div class="cal-day-name">목</div><div class="cal-day-name">금</div><div class="cal-day-name">토</div>
+                <div class="cal-day-name" style="color: #ef4444;">일</div>
+                <div class="cal-day-name">월</div>
+                <div class="cal-day-name">화</div>
+                <div class="cal-day-name">수</div>
+                <div class="cal-day-name">목</div>
+                <div class="cal-day-name">금</div>
+                <div class="cal-day-name" style="color: #ef4444;">토</div>
             </div>
             <div class="cal-grid" id="cal-days-container" style="margin-top: 4px;"></div>
         </div>
@@ -290,6 +297,23 @@
         let currentCalMonth = new Date().getMonth();
         let editingTaskId = null;
         let isInitialLoad = true;
+
+        // 대한민국 양력 공휴일 계산 함수
+        function isKoreanHoliday(year, month, day) {
+            const m = month + 1;
+            const d = day;
+            const fixedHolidays = ["1-1", "3-1", "5-5", "6-6", "8-15", "10-3", "10-9", "12-25"];
+            if (fixedHolidays.includes(`${m}-${d}`)) return true;
+
+            const holidayMap = {
+                2026: ["2-16", "2-17", "2-18", "5-24", "9-24", "9-25", "9-26"],
+                2025: ["1-28", "1-29", "1-30", "5-5", "5-6", "10-5", "10-6", "10-7", "10-8"],
+                2027: ["2-6", "2-7", "2-8", "5-13", "9-14", "9-15", "9-16"]
+            };
+            if (holidayMap[year] && holidayMap[year].includes(`${m}-${d}`)) return true;
+
+            return false;
+        }
 
         function triggerAlert(msg) {
             try {
@@ -498,21 +522,32 @@
             const firstDayIndex = new Date(currentCalYear, currentCalMonth, 1).getDay();
             const lastDay = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
             const prevLastDay = new Date(currentCalYear, currentCalMonth, 0).getDate();
+            
             for (let i = firstDayIndex; i > 0; i--) {
                 const cell = document.createElement('div');
                 cell.className = 'cal-cell other-month';
                 cell.innerText = prevLastDay - i + 1;
                 container.appendChild(cell);
             }
+
             const allTasks = getAllTasks();
+
             for (let i = 1; i <= lastDay; i++) {
                 const monthStr = String(currentCalMonth + 1).padStart(2, '0');
                 const dayStr = String(i).padStart(2, '0');
                 const dateStr = `${currentCalYear}-${monthStr}-${dayStr}`;
                 const cell = document.createElement('div');
                 cell.className = 'cal-cell';
+                
+                const dayOfWeek = new Date(currentCalYear, currentCalMonth, i).getDay();
+                // 일요일(0), 토요일(6), 또는 공휴일인 경우 빨간색(holiday) 적용
+                if (dayOfWeek === 0 || dayOfWeek === 6 || isKoreanHoliday(currentCalYear, currentCalMonth, i)) {
+                    cell.classList.add('holiday'); 
+                }
+
                 if (dateStr === todayStr) cell.classList.add('today');
                 if (dateStr === selectedDateStr) cell.classList.add('selected');
+
                 const hasTask = allTasks.some(t => dateStr >= t.startDate && dateStr <= t.endDate);
                 cell.innerHTML = `<span>${i}</span>${hasTask ? '<div class="dot-indicator"></div>' : ''}`;
                 cell.onclick = () => {
@@ -527,6 +562,7 @@
                 };
                 container.appendChild(cell);
             }
+
             const totalCells = firstDayIndex + lastDay;
             const nextDays = totalCells <= 35 ? 35 - totalCells : 42 - totalCells;
             for (let i = 1; i <= nextDays; i++) {
@@ -654,7 +690,6 @@
             if (task.workers) task.workers.forEach(w => badgesHtml += `<span class="worker-badge" style="${getWorkerColor(w)}">${escapeHtml(w)}</span>`);
             badgesHtml += '</div>';
 
-            // 💡 세부사항 및 비고/특이사항 항목이 팝업창에 표시되도록 추가 반영
             document.getElementById('modalTaskBody').innerHTML = `
                 <div class="card-detail-row"><span class="card-detail-label">상태</span><span class="card-detail-value"><strong>${statusText}</strong></span></div>
                 <div class="card-detail-row"><span class="card-detail-label">담당자</span><div class="card-detail-value">${badgesHtml}</div></div>
