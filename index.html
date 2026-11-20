@@ -19,6 +19,7 @@
         .header-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         h1 { font-size: 18px; color: var(--text-main); white-space: nowrap; }
         .archive-btn { background-color: #4b5563; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .staff-btn { background-color: #0f766e; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
         .header-date { font-size: 13px; font-weight: 600; color: var(--text-sub); }
         .main-layout { display: grid; grid-template-columns: 380px 1fr; gap: 16px; margin-bottom: 16px; }
         @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; } }
@@ -84,6 +85,11 @@
         .edit-btn { color: var(--primary); border-color: #93c5fd; background-color: #eff6ff; }
         .delete-btn { color: #ef4444; border-color: #fca5a5; background-color: #fff5f5; }
         .archive-item { background: #f9fafb; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border-color); font-size: 13px; }
+        .staff-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+        .staff-tab-btn { padding: 6px 10px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid var(--border-color); background: #f9fafb; color: var(--text-main); cursor: pointer; }
+        .staff-tab-btn.active { background: #0f766e; color: white; border-color: #0f766e; }
+        .role-badge-main { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #dbeafe; color: #1d4ed8; }
+        .role-badge-sub { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #f3f4f6; color: #4b5563; }
 
         /* 상단 토스트 알림 배너 스타일 */
         #toastBanner {
@@ -122,7 +128,7 @@
     </div>
     <script>
         function checkPassword() {
-            const ADMIN_PASSWORD = "8080";
+            const ADMIN_PASSWORD = "1234";
             const inputVal = document.getElementById('pwInput').value;
             const errorMsg = document.getElementById('pwErrorMsg');
             if (inputVal === ADMIN_PASSWORD) {
@@ -157,6 +163,7 @@
                     <div onclick="location.href='campingcar.html'" style="padding: 8px 12px; font-size: 13px; cursor: pointer; font-weight: bold;">🚐 캠핑카 제작현황판</div>
                 </div>
             </div>
+            <button class="staff-btn" onclick="openStaffModal()">👤 직원별 업무</button>
             <button class="archive-btn" onclick="openArchiveModal()">📂 아카이브</button>
         </div>
         <span class="header-date" id="header-today"></span>
@@ -206,16 +213,19 @@
                     <div><label>세부사항 (선택)</label><input type="text" id="taskDetail" placeholder="예: 상부장 도어 경첩 부착"></div>
                 </div>
                 <div>
-                    <label>담당자 (최대 3명)</label>
+                    <label>담당자 (최대 3명 — 첫 번째: 주담당, 두·세 번째: 부담당)</label>
                     <div class="form-row-3">
-                        <input type="text" id="taskWorker1" placeholder="담당자 1 (필수)">
-                        <input type="text" id="taskWorker2" placeholder="담당자 2">
-                        <input type="text" id="taskWorker3" placeholder="담당자 3">
+                        <input type="text" id="taskWorker1" placeholder="주담당 (필수)">
+                        <input type="text" id="taskWorker2" placeholder="부담당 1">
+                        <input type="text" id="taskWorker3" placeholder="부담당 2">
                     </div>
                 </div>
                 <div class="form-row">
                     <div><label>시작일</label><input type="date" id="taskStartDate" onchange="onStartDateChange()"></div>
                     <div><label>종료일 (기본: 시작일)</label><input type="date" id="taskEndDate"></div>
+                </div>
+                <div id="completedDateRow" class="form-row" style="grid-template-columns: 1fr; display: none;">
+                    <div><label>완료일 (수정 시 반영)</label><input type="date" id="taskCompletedDate"></div>
                 </div>
                 <div class="form-row" style="grid-template-columns: 1fr;">
                     <div><label>비고 / 특이사항 (선택)</label><input type="text" id="taskMemo" placeholder="특이사항 입력"></div>
@@ -235,7 +245,14 @@
         </div>
     </div>
 
-    <!-- 💡 달력 날짜 클릭 시 해당 날짜의 업무 목록을 보여주는 모달 창 추가 -->
+    <div class="modal" id="staffModal">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-header"><h3>👤 직원별 업무 목록</h3><button class="close-btn" onclick="closeStaffModal()">✕</button></div>
+            <div id="staff-tabs-container" class="staff-tabs"></div>
+            <div id="staff-tasks-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
     <div class="modal" id="dayTaskListModal">
         <div class="modal-content">
             <div class="modal-header"><h3 id="dayTaskListTitle">해당 날짜 업무 목록</h3><button class="close-btn" onclick="closeDayTaskListModal()">✕</button></div>
@@ -305,6 +322,7 @@
         let currentCalYear = new Date().getFullYear();
         let currentCalMonth = new Date().getMonth();
         let editingTaskId = null;
+        let selectedStaffName = null;
         let isInitialLoad = true;
 
         function isKoreanHoliday(year, month, day) {
@@ -413,7 +431,13 @@
             return [...manualTasks, ...carTasks];
         }
 
-        function openTaskFormModal() { document.getElementById('taskFormModal').style.display = 'flex'; }
+        function openTaskFormModal() {
+            if (!editingTaskId) {
+                document.getElementById('completedDateRow').style.display = 'none';
+                document.getElementById('taskCompletedDate').value = '';
+            }
+            document.getElementById('taskFormModal').style.display = 'flex';
+        }
         function closeTaskFormModal() { document.getElementById('taskFormModal').style.display = 'none'; if (editingTaskId) cancelEditMode(); }
 
         function processTaskSubmit() {
@@ -424,6 +448,7 @@
             const detail = document.getElementById('taskDetail').value.trim();
             const startDate = document.getElementById('taskStartDate').value;
             let endDate = document.getElementById('taskEndDate').value;
+            const completedDateInput = document.getElementById('taskCompletedDate').value;
             const memo = document.getElementById('taskMemo').value.trim();
 
             if (!name || !w1) { alert('업무명과 최소 첫 번째 담당자는 필수 입력사항입니다.'); return; }
@@ -438,11 +463,12 @@
                 if (task) {
                     task.name = name; task.workers = workers; task.detail = detail;
                     task.startDate = startDate; task.endDate = endDate; task.memo = memo;
+                    task.completedDate = completedDateInput ? completedDateInput : null;
                 }
                 cancelEditMode();
             } else {
                 const taskId = 'task_' + Date.now();
-                const newTask = { id: taskId, name, workers, detail: detail || '', startDate, endDate, memo: memo || '', status: 'pending', isCar: false };
+                const newTask = { id: taskId, name, workers, detail: detail || '', startDate, endDate, memo: memo || '', status: 'pending', completedDate: null, isCar: false };
                 manualTasks.push(newTask);
                 document.getElementById('taskName').value = '';
                 document.getElementById('taskWorker1').value = '';
@@ -450,6 +476,7 @@
                 document.getElementById('taskWorker3').value = '';
                 document.getElementById('taskDetail').value = '';
                 document.getElementById('taskMemo').value = '';
+                document.getElementById('taskCompletedDate').value = '';
                 document.getElementById('taskStartDate').value = selectedDateStr;
                 document.getElementById('taskEndDate').value = selectedDateStr;
             }
@@ -469,6 +496,8 @@
             document.getElementById('taskWorker3').value = task.workers[2] || '';
             document.getElementById('taskStartDate').value = task.startDate;
             document.getElementById('taskEndDate').value = task.endDate;
+            document.getElementById('completedDateRow').style.display = 'grid';
+            document.getElementById('taskCompletedDate').value = task.completedDate || '';
             document.getElementById('taskMemo').value = task.memo || '';
             document.getElementById('form-title').innerText = '✏️ 업무 정보 수정';
             document.getElementById('form-submit-btn').innerText = '수정 완료';
@@ -487,6 +516,7 @@
             document.getElementById('form-title').innerText = '➕ 새 업무 등록';
             document.getElementById('form-submit-btn').innerText = '업무 추가';
             document.getElementById('form-submit-btn').style.backgroundColor = 'var(--primary)';
+            document.getElementById('completedDateRow').style.display = 'none';
             const cancelBtn = document.getElementById('cancelEditBtn');
             if (cancelBtn) cancelBtn.remove();
             document.getElementById('taskName').value = '';
@@ -495,6 +525,7 @@
             document.getElementById('taskWorker3').value = '';
             document.getElementById('taskDetail').value = '';
             document.getElementById('taskMemo').value = '';
+            document.getElementById('taskCompletedDate').value = '';
             document.getElementById('taskStartDate').value = selectedDateStr;
             document.getElementById('taskEndDate').value = selectedDateStr;
             closeTaskFormModal();
@@ -508,7 +539,13 @@
             const currentIndex = stages.indexOf(task.status);
             const nextIndex = currentIndex + direction;
             if (nextIndex >= 0 && nextIndex < stages.length) {
-                task.status = stages[nextIndex];
+                const nextStatus = stages[nextIndex];
+                task.status = nextStatus;
+                if (nextStatus === 'completed') {
+                    task.completedDate = formatDate(new Date());
+                } else {
+                    task.completedDate = null;
+                }
                 saveManualTasksToCloud();
                 openTaskModal(id);
             }
@@ -521,6 +558,84 @@
                 if (editingTaskId === id) cancelEditMode();
                 saveManualTasksToCloud();
             }
+        }
+
+        // 💡 직원별 업무 목록 모달 열기 및 렌더링 (주담당/부담당 구분)
+        function openStaffModal() {
+            const staffSet = new Set();
+            manualTasks.forEach(t => {
+                if (Array.isArray(t.workers)) {
+                    t.workers.forEach(w => {
+                        if (w && w.trim()) staffSet.add(w.trim());
+                    });
+                }
+            });
+            const staffList = Array.from(staffSet);
+            const tabsContainer = document.getElementById('staff-tabs-container');
+            const tasksContainer = document.getElementById('staff-tasks-container');
+
+            if (staffList.length === 0) {
+                tabsContainer.innerHTML = '';
+                tasksContainer.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:24px; font-size:13px;">등록된 담당자 업무가 없습니다.</div>`;
+                document.getElementById('staffModal').style.display = 'flex';
+                return;
+            }
+
+            if (!selectedStaffName || !staffList.includes(selectedStaffName)) {
+                selectedStaffName = staffList[0];
+            }
+
+            tabsContainer.innerHTML = staffList.map(name => {
+                const activeClass = name === selectedStaffName ? 'staff-tab-btn active' : 'staff-tab-btn';
+                return `<button type="button" class="${activeClass}" onclick="selectStaffTab('${escapeHtml(name)}')">${escapeHtml(name)}</button>`;
+            }).join('');
+
+            renderStaffTasks(selectedStaffName);
+            document.getElementById('staffModal').style.display = 'flex';
+        }
+
+        function selectStaffTab(name) {
+            selectedStaffName = name;
+            openStaffModal();
+        }
+
+        function renderStaffTasks(staffName) {
+            const container = document.getElementById('staff-tasks-container');
+            const matched = [];
+            manualTasks.forEach(t => {
+                if (!Array.isArray(t.workers)) return;
+                const idx = t.workers.findIndex(w => w && w.trim() === staffName);
+                if (idx !== -1) {
+                    matched.push({ task: t, role: idx === 0 ? '주담당' : '부담당' });
+                }
+            });
+
+            if (matched.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:#9ca3af; padding:20px; font-size:13px;">해당 직원의 업무가 없습니다.</div>`;
+                return;
+            }
+
+            container.innerHTML = matched.map(({ task, role }) => {
+                const statusBadge = task.status === 'completed' ? '✅ 완료' : (task.status === 'in-progress' ? '🔄 진행중' : '⏳ 대기');
+                const roleBadgeClass = role === '주담당' ? 'role-badge-main' : 'role-badge-sub';
+                const completedInfo = task.completedDate ? ` · 완료: ${escapeHtml(task.completedDate)}` : '';
+                return `
+                    <div onclick="closeStaffModal(); openTaskModal('${task.id}')" style="background:#f8fafc; border:1px solid var(--border-color); border-radius:6px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px; cursor:pointer;">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+                                <span class="${roleBadgeClass}">${role}</span>
+                                <strong style="font-size:14px; color:var(--text-main);">${escapeHtml(task.name)}</strong>
+                            </div>
+                            <div style="font-size:12px; color:var(--text-sub);">기간: ${escapeHtml(task.startDate)} ~ ${escapeHtml(task.endDate)}${completedInfo}</div>
+                        </div>
+                        <span class="task-status-badge">${statusBadge}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function closeStaffModal() {
+            document.getElementById('staffModal').style.display = 'none';
         }
 
         function renderCalendar() {
@@ -558,7 +673,6 @@
                 const hasTask = allTasks.some(t => dateStr >= t.startDate && dateStr <= t.endDate);
                 cell.innerHTML = `<span>${i}</span>${hasTask ? '<div class="dot-indicator"></div>' : ''}`;
                 
-                // 💡 달력 날짜 클릭 시 해당 날짜 업무 목록 팝업창 띄우기
                 cell.onclick = () => {
                     selectedDateStr = dateStr;
                     currentCalYear = parseInt(dateStr.split('-')[0]);
@@ -583,7 +697,6 @@
             }
         }
 
-        // 💡 특정 날짜의 업무 목록을 모아서 보여주는 모달 함수
         function openDayTaskListModal(dateStr) {
             document.getElementById('dayTaskListTitle').innerText = `📅 ${dateStr} 업무 목록`;
             const container = document.getElementById('dayTaskListBody');
@@ -735,11 +848,21 @@
             document.getElementById('modalTaskTitle').innerText = task.name;
             let statusText = task.status === 'completed' ? '완료' : (task.status === 'in-progress' ? '진행 중' : '작업 전');
             let badgesHtml = '<div class="worker-badges-container">';
-            if (task.workers) task.workers.forEach(w => badgesHtml += `<span class="worker-badge" style="${getWorkerColor(w)}">${escapeHtml(w)}</span>`);
+            if (task.workers) {
+                task.workers.forEach((w, idx) => {
+                    const roleLabel = idx === 0 ? '주담당' : '부담당';
+                    badgesHtml += `<span class="worker-badge" style="${getWorkerColor(w)}">${escapeHtml(w)} (${roleLabel})</span>`;
+                });
+            }
             badgesHtml += '</div>';
+
+            const completedRowHtml = task.completedDate
+                ? `<div class="card-detail-row"><span class="card-detail-label">완료일</span><span class="card-detail-value"><strong>${escapeHtml(task.completedDate)}</strong></span></div>`
+                : '';
 
             document.getElementById('modalTaskBody').innerHTML = `
                 <div class="card-detail-row"><span class="card-detail-label">상태</span><span class="card-detail-value"><strong>${statusText}</strong></span></div>
+                ${completedRowHtml}
                 <div class="card-detail-row"><span class="card-detail-label">담당자</span><div class="card-detail-value">${badgesHtml}</div></div>
                 <div class="card-detail-row"><span class="card-detail-label">세부사항</span><span class="card-detail-value">${task.detail ? escapeHtml(task.detail) : '<span style="color:#9ca3af; font-weight:normal;">없음</span>'}</span></div>
                 <div class="card-detail-row"><span class="card-detail-label">비고 / 특이사항</span><span class="card-detail-value">${task.memo ? escapeHtml(task.memo) : '<span style="color:#9ca3af; font-weight:normal;">없음</span>'}</span></div>
@@ -762,7 +885,8 @@
             const task = manualTasks.find(t => t.id === id);
             if (!task) return;
             if (confirm(`'${task.name}' 업무를 아카이브함으로 이동하시겠습니까?`)) {
-                archives.push({ name: task.name, date: task.endDate || task.startDate, workers: task.workers, detail: task.detail || '', memo: task.memo || '' });
+                const recordDate = task.completedDate || task.endDate || task.startDate;
+                archives.push({ name: task.name, date: recordDate, completedDate: task.completedDate || '', workers: task.workers, detail: task.detail || '', memo: task.memo || '' });
                 localStorage.setItem('schedule_archives', JSON.stringify(archives));
                 manualTasks = manualTasks.filter(t => t.id !== id);
                 saveManualTasksToCloud();
